@@ -1,10 +1,28 @@
 version: '3.8'
+
 services:
+  # 1. O Banco de Dados Postgres
   db:
     image: postgres:15
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: 123
-      POSTGRES_DB: projeto_desktop
+      POSTGRES_USER: usuario_java
+      POSTGRES_PASSWORD: senha_segura_123
+      POSTGRES_DB: banco_do_projeto
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. (Opcional) Uma interface web para ver o banco
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@projeto.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
