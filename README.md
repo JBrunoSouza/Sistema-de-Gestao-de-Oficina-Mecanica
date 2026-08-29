@@ -8,6 +8,6 @@ Projeto final de Engenharia de Software II
 
 no diretório raiz do projeto execute:
 
-```bash
+    ```bash
     docker compose up -d --build
     ```
