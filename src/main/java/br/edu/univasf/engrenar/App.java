@@ -12,7 +12,10 @@ public final class App {
         try {
             Path folder = Path.of(System.getProperty("engrenar.dataDir", "data")).toAbsolutePath();
             Files.createDirectories(folder);
-            Database db = new Database("jdbc:h2:file:" + folder.resolve("engrenar").toString().replace('\\','/'), true);
+            Database db = new Database(
+                    "jdbc:postgresql://localhost:5432/engrenar-db",
+                    true
+            );
             SwingUtilities.invokeLater(() -> new MainFrame(new WorkshopService(db), folder.toString()).setVisible(true));
         } catch (Exception e) {
             e.printStackTrace();
