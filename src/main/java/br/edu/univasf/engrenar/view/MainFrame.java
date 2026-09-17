@@ -29,8 +29,7 @@ public final class MainFrame extends JFrame {
         for(String name:List.of("Visão geral","Clientes","Veículos","Ordens de serviço","Estoque","Relatórios")) {
             JButton b=button(name,"nav-"+name,()->showPage(name)); b.setMaximumSize(new Dimension(200,43)); b.setAlignmentX(LEFT_ALIGNMENT); sidebar.add(b); sidebar.add(Box.createVerticalStrut(10));
         }
-        sidebar.add(Box.createVerticalGlue()); JLabel local=new JLabel("●  Banco local · H2"); local.setForeground(new Color(125,206,166)); sidebar.add(local);
-        JLabel delivery=new JLabel("Entrega parcial • 2026.2"); delivery.setForeground(MUTED); sidebar.add(delivery);
+        sidebar.add(Box.createVerticalGlue()); JLabel local=new JLabel("●  Banco local · PostgreSQL"); local.setForeground(new Color(125,206,166)); sidebar.add(local);
         content.setBorder(BorderFactory.createEmptyBorder(28,30,20,30));
         JPanel main=new JPanel(new BorderLayout()); main.add(content); message.setBorder(BorderFactory.createEmptyBorder(10,30,14,15)); message.setToolTipText("Dados: "+dataPath); main.add(message,BorderLayout.SOUTH);
         add(sidebar,BorderLayout.WEST); add(main); showPage(page);
