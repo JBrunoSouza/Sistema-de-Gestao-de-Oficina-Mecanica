@@ -7,6 +7,7 @@ Entrega parcial de Engenharia de Software II — UNIVASF, 2026.2. Desktop Java 1
 Desenvolvimento: **JDK 17+ e Maven 3.9+**.
 
 ```sh
+docker compose up -d
 mvn clean compile exec:java
 ```
 
