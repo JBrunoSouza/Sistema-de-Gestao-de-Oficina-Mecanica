@@ -18,9 +18,6 @@ mvn clean package
 java -jar target/engrenar-1.0.0.jar
 ```
 
-## Dados locais
-
-- Schema: `database/schema.sql`. Dados fictícios: `database/seed.sql`.
 
 ## Entrega funcional
 
