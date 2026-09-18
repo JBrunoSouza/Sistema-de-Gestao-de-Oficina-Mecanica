@@ -1,11 +1,6 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-if not exist "target\engrenar-1.0.0.jar" (
-  echo Execute mvn clean package antes de iniciar.
-  pause
-  exit /b 1
-)
 docker compose up -d
-java -jar "target\engrenar-1.0.0.jar"
+mvn clean javafx:run
 if errorlevel 1 pause
