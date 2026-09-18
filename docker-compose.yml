@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # 1. O Banco de Dados Postgres
+
   db:
     image: postgres:15
     environment:

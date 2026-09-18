@@ -6,5 +6,6 @@ if not exist "target\engrenar-1.0.0.jar" (
   pause
   exit /b 1
 )
+docker compose up -d
 java -jar "target\engrenar-1.0.0.jar"
 if errorlevel 1 pause
