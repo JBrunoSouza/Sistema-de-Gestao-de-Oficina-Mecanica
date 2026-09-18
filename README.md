@@ -5,19 +5,11 @@ Entrega parcial de Engenharia de Software II — UNIVASF, 2026.2. Desktop Java 1
 ## Executar
 
 Desenvolvimento: **JDK 17+ e Maven 3.9+**.
-
+Executar iniciar.cmd ou:
 ```sh
 docker compose up -d
-mvn clean compile exec:java
+ mvn clean javafx:run
 ```
-
-Para gerar o executável com todas as dependências:
-
-```sh
-mvn clean package
-java -jar target/engrenar-1.0.0.jar
-```
-
 
 ## Entrega funcional
 
