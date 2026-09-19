@@ -270,43 +270,32 @@ Engrenar/
 
 ### Tela de login
 
-Tela de login para funcionários
+![Tela de login para funcionários]()
 
 ### Tela principal
 
-Tela principal do Engrenar
+![Tela principal do Engrenar](docs/images/dashboard.png)
+
 
 ### Cadastro de clientes
 
-Cadastro de clientes
+![Cadastro de clientes](docs/images/costumers.png)
 
 ### Cadastro de veículos
 
-Cadastro de veículos
+![Cadastro de veículos](docs/images/vehicles.png)
 
 ### Abertura de ordem de serviço
 
-Abertura de ordem de serviço
-
-### Diagnóstico e serviços
-
-Diagnóstico e serviços
+![Abertura de ordem de serviço](docs/images/os.png)
 
 ### Controle de estoque
 
-Controle de estoque
-
-### Orçamento
-
-Tela de orçamento
-
-### Fechamento da ordem de serviço
-
-Fechamento da ordem de serviço
+![Controle de estoque](docs/images/storage.png)
 
 ### Relatórios
 
-Tela de relatórios
+![Tela de relatórios](docs/images/relatorios.png)
 
 ## Modelagem e Documentação
 
