@@ -246,25 +246,75 @@ docker compose down
 ## Estrutura do Projeto
 
 ```
-Engrenar/
+Sistema-de-Gestao-de-Oficina-Mecanica/
+├── database/
+│   ├── .keep
+│   ├── schema.sql
+│   └── seed.sql
+│
 ├── docs/
-│   ├── DocumentoRequisitos2026_2.pdf
-│   └── diagramas/
+│   ├── Diagrama_casos_de_uso.png
+│   ├── Documento_de_requisitos_Engrenar.pdf
+│   └── images/
+│       ├── costumers.png
+│       ├── dashboard.png
+│       ├── os.png
+│       ├── relatorios.png
+│       ├── storage.png
+│       └── vehicles.png
 │
 ├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── ...
-│   │   └── resources/
-│   │       └── ...
-│   │
-│   └── test/
+│   └── main/
+│       ├── java/
+│       │   └── br/
+│       │       └── edu/
+│       │           └── univasf/
+│       │               └── engrenar/
+│       │                   ├── App.java
+│       │                   ├── dao/
+│       │                   │   ├── Database.java
+│       │                   │   └── WorkshopDao.java
+│       │                   ├── model/
+│       │                   │   ├── Budget.java
+│       │                   │   ├── Customer.java
+│       │                   │   ├── OrderItem.java
+│       │                   │   ├── OrderStatus.java
+│       │                   │   ├── Part.java
+│       │                   │   ├── ServiceOrder.java
+│       │                   │   └── Vehicle.java
+│       │                   ├── service/
+│       │                   │   ├── ValidationException.java
+│       │                   │   └── WorkshopService.java
+│       │                   └── view/
+│       │                       ├── EngrenarFxApp.java
+│       │                       ├── Form.java
+│       │                       ├── FxForm.java
+│       │                       ├── MainFrame.java
+│       │                       ├── MainWindow.java
+│       │                       └── Theme.java
+│       │
+│       └── resources/
+│           └── styles/
+│               └── theme.css
 │
 ├── docker-compose.yml
 ├── iniciar.cmd
 ├── pom.xml
 └── README.md
 ```
+### Overview da Estrutura
+
+- `src/main/java`: contém o código principal da aplicação, organizado em:
+    - `dao`: acesso e persistência de dados.
+    - `model`: entidades e objetos do sistema.
+    - `service`: regras de negócio e validações.
+    - `view`: telas e componentes da interface gráfica.
+- `src/main/resources`: contém arquivos de recursos, como o tema visual em CSS.
+- `database`: possui os scripts de criação e inicialização do banco PostgreSQL.
+- `docs`: reúne documentos, diagramas e imagens do sistema.
+- `pom.xml`: configura as dependências e o processo de compilação com Maven.
+- `docker-compose.yml`: configura o banco de dados PostgreSQL em um container Docker.
+- `iniciar.cmd`: script para iniciar a aplicação no Windows sem precisar executar linhas de comando.
 
 ## Imagens do Sistema
 
