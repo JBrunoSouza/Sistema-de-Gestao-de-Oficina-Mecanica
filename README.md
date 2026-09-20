@@ -366,8 +366,8 @@ Projeto desenvolvido por alunos da Universidade Federal do Vale do São Francisc
 - [Thiago Roberto de Lima Ribeiro](https://github.com/devthiagoribeiro)
 - [Matheus Souza da Silva Leite](https://github.com/theuzszz)
 - [Luiz Antonio Lacerda Amorim](https://github.com/LuizAmorim19)
-- [José Bruno de Souza Alves](https://github.com/JBrunoSouza/)
-- [Roger Rodrigues de Souza]()
+- [José Bruno de Souza Alves](https://github.com/JBrunoSouza)
+- [Roger Rodrigues de Souza](https://github.com/RogerSoz)
 
 
 ## Contribuições
