@@ -1,0 +1,331 @@
+/* Tema Escuro e Laranja do Sistema Engrenar para JavaFX */
+
+.root {
+  -fx-font-family:
+    "Segoe UI",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Helvetica Neue",
+    sans-serif;
+  -fx-font-size: 13px;
+  -fx-base: #20252c;
+  -fx-background: #20252c;
+  -fx-control-inner-background: #242a32;
+  -fx-text-base-color: #f0f2f5;
+  -fx-accent: #f48b32;
+  -fx-focus-color: #f48b32;
+  -fx-faint-focus-color: transparent;
+}
+
+/* Painel Lateral (Sidebar) */
+.sidebar {
+  -fx-background-color: #181b21;
+  -fx-padding: 24 16 20 16;
+}
+
+.brand-title {
+  -fx-text-fill: #f48b32;
+  -fx-font-size: 24px;
+  -fx-font-weight: bold;
+}
+
+.brand-subtitle {
+  -fx-text-fill: #a6aebc;
+  -fx-font-size: 13px;
+}
+
+.db-indicator {
+  -fx-text-fill: #7dcea6;
+  -fx-font-size: 12px;
+}
+
+/* Botões da Navegação */
+.nav-button {
+  -fx-background-color: transparent;
+  -fx-text-fill: #c5cdd9;
+  -fx-font-size: 14px;
+  -fx-alignment: CENTER_LEFT;
+  -fx-padding: 10 16;
+  -fx-background-radius: 8px;
+  -fx-cursor: hand;
+}
+
+.nav-button:hover {
+  -fx-background-color: #262c36;
+  -fx-text-fill: #ffffff;
+}
+
+.nav-button-active {
+  -fx-background-color: #2b323e;
+  -fx-text-fill: #f48b32;
+  -fx-font-weight: bold;
+  -fx-border-color: #f48b32;
+  -fx-border-width: 0 0 0 3px;
+  -fx-border-radius: 0;
+}
+
+/* Botões Globais */
+.button {
+  -fx-background-color: #2e3540;
+  -fx-text-fill: #e6ebf2;
+  -fx-background-radius: 8px;
+  -fx-padding: 7 14;
+  -fx-cursor: hand;
+  -fx-font-size: 13px;
+}
+
+.button:hover {
+  -fx-background-color: #3b4452;
+}
+
+.primary-button {
+  -fx-background-color: #f48b32;
+  -fx-text-fill: #191919;
+  -fx-font-weight: bold;
+  -fx-background-radius: 8px;
+  -fx-padding: 8 16;
+  -fx-cursor: hand;
+}
+
+.primary-button:hover {
+  -fx-background-color: #ff9d47;
+}
+
+.primary-button:disabled {
+  -fx-opacity: 0.45;
+}
+
+/* Barra de Status Inferior */
+.status-bar {
+  -fx-background-color: #181b21;
+  -fx-padding: 10 24;
+  -fx-border-color: #262b33;
+  -fx-border-width: 1px 0 0 0;
+}
+
+.status-message {
+  -fx-text-fill: #7dcea6;
+  -fx-font-size: 12px;
+}
+
+.status-message-error {
+  -fx-text-fill: #ff9292;
+  -fx-font-size: 12px;
+}
+
+/* Cabeçalhos de Página */
+.page-title {
+  -fx-text-fill: #ffffff;
+  -fx-font-size: 26px;
+  -fx-font-weight: bold;
+}
+
+.page-subtitle {
+  -fx-text-fill: #a6aebc;
+  -fx-font-size: 14px;
+}
+
+/* Cards de Métricas (Dashboard) */
+.metric-card {
+  -fx-background-color: #242a32;
+  -fx-border-color: #3a4250;
+  -fx-border-width: 1px;
+  -fx-border-radius: 8px;
+  -fx-background-radius: 8px;
+  -fx-padding: 16 20;
+}
+
+.metric-number {
+  -fx-text-fill: #f48b32;
+  -fx-font-size: 32px;
+  -fx-font-weight: bold;
+}
+
+.metric-title {
+  -fx-text-fill: #cfd4dc;
+  -fx-font-size: 14px;
+}
+
+/* Campos de Formulário */
+.text-field,
+.text-area,
+.combo-box {
+  -fx-background-color: #272d36;
+  -fx-text-fill: #ffffff;
+  -fx-prompt-text-fill: #7c8696;
+  -fx-border-color: #3d4655;
+  -fx-border-width: 1px;
+  -fx-border-radius: 6px;
+  -fx-background-radius: 6px;
+  -fx-padding: 7 10;
+}
+
+.text-field:focused,
+.text-area:focused,
+.combo-box:focused {
+  -fx-border-color: #f48b32;
+}
+
+.combo-box .list-cell {
+  -fx-text-fill: #ffffff;
+  -fx-background-color: transparent;
+}
+
+.combo-box-popup .list-view {
+  -fx-background-color: #242a32;
+  -fx-border-color: #3d4655;
+}
+
+.combo-box-popup .list-cell:hover {
+  -fx-background-color: #343c4a;
+}
+
+.combo-box-popup .list-cell:filled:selected {
+  -fx-background-color: #f48b32;
+  -fx-text-fill: #191919;
+}
+
+/* Erro de Validação */
+.error-field {
+  -fx-border-color: #ff9292 !important;
+  -fx-border-width: 1.5px !important;
+  -fx-border-radius: 6px !important;
+}
+
+.form-error-label {
+  -fx-text-fill: #ff9292;
+  -fx-font-size: 12px;
+  -fx-wrap-text: true;
+}
+
+.field-label {
+  -fx-text-fill: #d5dae2;
+  -fx-font-size: 13px;
+  -fx-font-weight: bold;
+}
+
+/* Tabelas */
+.table-view {
+  -fx-background-color: #242a32;
+  -fx-border-color: #363d4a;
+  -fx-border-width: 1px;
+  -fx-border-radius: 8px;
+  -fx-background-radius: 8px;
+}
+
+.table-view .column-header-background {
+  -fx-background-color: #1c2027;
+}
+
+.table-view .column-header {
+  -fx-background-color: #1c2027;
+  -fx-padding: 8 6;
+  -fx-border-color: transparent #2c333e transparent transparent;
+}
+
+.table-view .column-header .label {
+  -fx-text-fill: #cfd5df;
+  -fx-font-weight: bold;
+  -fx-font-size: 13px;
+}
+
+.table-row-cell {
+  -fx-background-color: #242a32;
+  -fx-border-color: transparent transparent #2a313b transparent;
+  -fx-cell-size: 38px;
+}
+
+.table-row-cell:odd {
+  -fx-background-color: #21262d;
+}
+
+.table-row-cell:hover {
+  -fx-background-color: #2d3440;
+}
+
+.table-row-cell:selected {
+  -fx-background-color: #4b3a24;
+}
+
+.table-row-cell:selected .text {
+  -fx-fill: #ffffff;
+}
+
+.table-row-cell .text {
+  -fx-fill: #e8ecf2;
+}
+
+/* Abas (TabPane) */
+.tab-pane .tab-header-area .tab-header-background {
+  -fx-background-color: #1c2027;
+}
+
+.tab-pane .tab {
+  -fx-background-color: #242a32;
+  -fx-background-radius: 6px 6px 0 0;
+  -fx-padding: 8 16;
+}
+
+.tab-pane .tab:hover {
+  -fx-background-color: #2c333e;
+}
+
+.tab-pane .tab:selected {
+  -fx-background-color: #20252c;
+  -fx-border-color: #f48b32 transparent transparent transparent;
+  -fx-border-width: 3px 0 0 0;
+}
+
+.tab-pane .tab .tab-label {
+  -fx-text-fill: #a6aebc;
+  -fx-font-size: 13px;
+}
+
+.tab-pane .tab:selected .tab-label {
+  -fx-text-fill: #f48b32;
+  -fx-font-weight: bold;
+}
+
+/* Checkbox */
+.check-box .box {
+  -fx-background-color: #282e38;
+  -fx-border-color: #434c5b;
+  -fx-border-radius: 4px;
+  -fx-background-radius: 4px;
+}
+
+.check-box:selected .box {
+  -fx-background-color: #f48b32;
+  -fx-border-color: #f48b32;
+}
+
+.check-box:selected .mark {
+  -fx-background-color: #191919;
+}
+
+/* ScrollBar */
+.scroll-bar {
+  -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+  -fx-background-color: #383f4d;
+  -fx-background-radius: 4px;
+}
+
+.scroll-bar .thumb:hover {
+  -fx-background-color: #4d5668;
+}
+
+/* Dialog / Modal */
+.dialog-pane {
+  -fx-background-color: #20252c;
+}
+
+.dialog-pane .header-panel {
+  -fx-background-color: #181b21;
+}
+
+.dialog-pane .content {
+  -fx-text-fill: #e8ecf2;
+}
