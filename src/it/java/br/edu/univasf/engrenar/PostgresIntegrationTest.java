@@ -12,6 +12,12 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PostgresIntegrationTest {
+    static void mechanic(Runnable action) {
+        AppUser previous=Session.getUser();
+        Session.login(new AppUser(998,"Mecânico de teste","mechanic-test","",Role.MECANICO));
+        try { action.run(); } finally { if(previous==null)Session.logout();else Session.login(previous); }
+    }
+
     static EmbeddedPostgres postgres;
     Database db;WorkshopService service;String url;
     @BeforeAll static void start()throws Exception {
@@ -32,10 +38,10 @@ class PostgresIntegrationTest {
         var customer=service.addCustomer("Teste PostgreSQL","123","pg@example.com");
         var vehicle=service.addVehicle("PGT1A23","Fiat","Argo","10","2021",customer.id());
         var order=service.openOrder(customer.id(),vehicle.id(),"Teste","23/09/2026","10","Gerente");
-        service.saveDiagnosis(order.id(),"Revisao");service.addService(order.id(),"Revisao","2","25,50");
+        mechanic(() -> service.saveDiagnosis(order.id(),"Revisao"));mechanic(() -> service.addService(order.id(),"Revisao","2","25,50"));
         service.addPart("Peca PG","10","3");var part=service.parts().stream().filter(p->p.name().equals("Peca PG")).findFirst().orElseThrow();
         service.consumePart(order.id(),part.id(),"1");service.decideBudget(order.id(),true,"Gerente");
-        service.completeService(order.id(),service.items(order.id()).stream().filter(i->i.kind().equals("SERVICE")).findFirst().orElseThrow().id());
+        mechanic(() -> service.completeService(order.id(),service.items(order.id()).stream().filter(i->i.kind().equals("SERVICE")).findFirst().orElseThrow().id()));
         service.closeOrder(order.id(),"PIX","23/09/2026",true);
         var report=service.report(new ReportFilter(LocalDate.of(2026,9,23),LocalDate.of(2026,9,23),OrderStatus.CLOSED,"PGT1A23"));
         assertEquals(1,report.rows().size());assertEquals(new BigDecimal("61.00"),report.receivedTotal());
@@ -51,7 +57,7 @@ class PostgresIntegrationTest {
     }
     @Test void rejectionResolutionAndPasswordRecoveryPersist(){
         var order=service.orders().stream().filter(o->o.status()==OrderStatus.OPEN).findFirst().orElseThrow();
-        service.saveDiagnosis(order.id(),"Revisão");
+        mechanic(() -> service.saveDiagnosis(order.id(),"Revisão"));
         var part=service.parts().get(0);
         service.consumePart(order.id(),part.id(),"1");
         service.decideBudget(order.id(),false,"Cliente");

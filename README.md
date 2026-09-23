@@ -68,6 +68,8 @@ A aplicação foi projetada para funcionamento **desktop e local**, utilizando u
 
 ### Diagnóstico e Serviços
 
+- Registro de diagnóstico, inclusão, remoção e conclusão de serviços exclusivos do **Mecânico**.
+
 - Registro do diagnóstico técnico.
 - Adição de serviços recomendados e seus respectivos valores.
 - Marcação de serviços como concluídos.
@@ -75,6 +77,8 @@ A aplicação foi projetada para funcionamento **desktop e local**, utilizando u
 - Validação de diagnóstico obrigatório.
 
 ### Controle de Estoque
+
+- Cadastro, reposição, consumo e remoção de peças exclusivos do **Gerente (administrador)**.
 
 - Cadastro de peças.
 - Registro de entrada e reposição de estoque.

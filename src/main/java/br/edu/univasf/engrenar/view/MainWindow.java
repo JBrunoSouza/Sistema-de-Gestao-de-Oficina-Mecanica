@@ -752,7 +752,7 @@ public final class MainWindow extends BorderPane {
             service.saveDiagnosis(order.id(), diagnosis.getText());
             notice("Diagnóstico salvo.", false);
         });
-        saveDiag.setDisable(Session.getUser().role() == Role.ATENDENTE || order.status() != OrderStatus.OPEN);
+        saveDiag.setDisable(Session.getUser().role() != Role.MECANICO || order.status() != OrderStatus.OPEN);
         diagnosis.setEditable(!saveDiag.isDisabled());
 
         top.getChildren().addAll(complaint, diagLabel, diagnosis, saveDiag);
@@ -785,10 +785,15 @@ public final class MainWindow extends BorderPane {
             showDialog(dialog);
         });
 
-        boolean canExecute = Session.getUser().role() != Role.ATENDENTE;
+        boolean canExecute = Session.getUser().role() == Role.MECANICO;
         add.setDisable(!canExecute || order.status() != OrderStatus.OPEN);
-        part.setDisable(!canExecute || order.status() != OrderStatus.OPEN);
-        remove.setDisable(!canExecute || order.status() != OrderStatus.OPEN);
+        part.setDisable(Session.getUser().role() != Role.GERENTE || order.status() != OrderStatus.OPEN);
+        remove.setDisable(true);
+        list.getSelectionModel().selectedItemProperty().addListener((observable, oldItem, selected) -> {
+            boolean allowed = selected != null && (selected.kind().equals("Peça")
+                ? Session.getUser().role() == Role.GERENTE : Session.getUser().role() == Role.MECANICO);
+            remove.setDisable(!allowed || order.status() != OrderStatus.OPEN);
+        });
         complete.setDisable(!canExecute || order.status() != OrderStatus.APPROVED);
 
         actions.getChildren().addAll(add, part, remove, complete);

@@ -206,12 +206,12 @@ public final class WorkshopService {
         return order;
     }
     public void saveDiagnosis(long orderId, String diagnosis) {
-        requireRole(Role.GERENTE, Role.MECANICO);
+        requireRole(Role.MECANICO);
         String text = required(diagnosis,"diagnosis","o diagnóstico técnico",4000);
         db.transaction(c -> { editable(c,orderId); dao.execute(c,"UPDATE service_order SET diagnosis=? WHERE id=?",text,orderId); return null; });
     }
     public void addService(long orderId, String description, String quantity, String unitPrice) {
-        requireRole(Role.GERENTE, Role.MECANICO);
+        requireRole(Role.MECANICO);
         String text = required(description,"description","a descrição do serviço",200);
         int q = (int)integer(quantity,"quantity","Quantidade",1,9999);
         BigDecimal price = money(unitPrice);
@@ -249,7 +249,7 @@ public final class WorkshopService {
         });
     }
     public void consumePart(long orderId, Long partId, String quantity) {
-        requireRole(Role.GERENTE, Role.MECANICO);
+        requireRole(Role.GERENTE);
         int q = (int)integer(quantity,"quantity","Quantidade utilizada",1,9999);
         db.transaction(c -> {
             editable(c,orderId);
@@ -267,6 +267,7 @@ public final class WorkshopService {
         db.transaction(c -> {
             editable(c,orderId);
             OrderItem item = dao.items(c,orderId).stream().filter(i -> i.id()==itemId).findFirst().orElseThrow(() -> new ValidationException("item","Selecione um item desta OS."));
+            requireRole(item.kind().equals("PART") ? Role.GERENTE : Role.MECANICO);
             if (item.partId()!=null) returnPart(c,item,orderId,"Item removido");
             dao.execute(c,"DELETE FROM order_item WHERE id=?",itemId); return null;
         });
@@ -298,7 +299,7 @@ public final class WorkshopService {
         completeService(id,itemId,"");
     }
     public void completeService(long id,long itemId,String observations) {
-        requireRole(Role.GERENTE, Role.MECANICO);
+        requireRole(Role.MECANICO);
         String note=observations==null?"":observations.strip();
         if(note.length()>2000)throw new ValidationException("observations","Observações: máximo de 2000 caracteres.");
         db.transaction(c -> {
@@ -330,7 +331,7 @@ public final class WorkshopService {
     }
 
     public List<HistoryEntry> orderHistory(long id){requireAuthenticated();return db.transaction(c->dao.orderHistory(c,id));}
-    public List<HistoryEntry> stockHistory(long id){requireRole(Role.GERENTE,Role.MECANICO);return db.transaction(c->dao.stockHistory(c,id));}
+    public List<HistoryEntry> stockHistory(long id){requireRole(Role.GERENTE);return db.transaction(c->dao.stockHistory(c,id));}
     private void event(Connection c,long id,String type,String details)throws SQLException{
         dao.insert(c,"INSERT INTO order_event(order_id,occurred_at,actor,event_type,details) VALUES(?,?,?,?,?)",id,LocalDateTime.now(clock),Session.getUser().username(),type,details);
     }

@@ -54,6 +54,32 @@ class JavaFxAuditTest {
             stage.close();Session.logout();
         });
     }
+    @ParameterizedTest @EnumSource(Role.class)
+    void orderButtonsRespectExclusiveRoles(Role role)throws Exception {
+        fx(()->{
+            var service=service();Session.login(new AppUser(999,"Teste","teste","",Role.MECANICO));
+            var order=service.orders().stream().filter(o->o.status()==OrderStatus.OPEN).findFirst().orElseThrow();
+            service.saveDiagnosis(order.id(),"Teste de permissões");service.addService(order.id(),"Reparo","1","10");
+            Session.login(new AppUser(999,"Teste","teste","",Role.GERENTE));
+            service.consumePart(order.id(),service.parts().get(0).id(),"1");
+            Session.login(new AppUser(999,"Teste","teste","",role));
+            Stage stage=new Stage();MainWindow root=new MainWindow(stage,service,"");
+            try {
+                var method=MainWindow.class.getDeclaredMethod("itemsPanel",ServiceOrder.class);method.setAccessible(true);
+                Parent panel=(Parent)method.invoke(root,service.order(order.id()));stage.setScene(new Scene(panel));
+                assertEquals(role!=Role.MECANICO,((Button)panel.lookup("#save-diagnosis")).isDisabled());
+                assertEquals(role!=Role.MECANICO,((Button)panel.lookup("#add-service")).isDisabled());
+                assertEquals(role!=Role.GERENTE,((Button)panel.lookup("#consume-part")).isDisabled());
+                @SuppressWarnings("unchecked") TableView<MainWindow.ItemRow> table=(TableView<MainWindow.ItemRow>)panel.lookup("#items-table");
+                for(var row:table.getItems()) {
+                    table.getSelectionModel().select(row);
+                    Role allowed=row.kind().equals("Peça")?Role.GERENTE:Role.MECANICO;
+                    assertEquals(role!=allowed,((Button)panel.lookup("#remove-item")).isDisabled());
+                }
+            }catch(ReflectiveOperationException e){throw new RuntimeException(e);}
+            finally{stage.close();Session.logout();}
+        });
+    }
     @Test void seededAdminCanLoginViaActualLoginForm() throws Exception {
         fx(()->{
             Session.logout();boolean[] entered={false};LoginForm form=new LoginForm(service(),()->entered[0]=true);

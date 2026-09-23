@@ -10,13 +10,19 @@ import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class EvolutionTest {
+    static void mechanic(Runnable action) {
+        AppUser previous=Session.getUser();
+        Session.login(new AppUser(998,"Mecânico de teste","mechanic-test","",Role.MECANICO));
+        try { action.run(); } finally { if(previous==null)Session.logout();else Session.login(previous); }
+    }
+
     Database db;WorkshopService s;String url;
     static final Clock NOW=Clock.fixed(Instant.parse("2026-09-23T12:00:00Z"),ZoneOffset.UTC);
     static final String PASSWORD="Senha longa de teste 2026";
     @BeforeEach void start(){url="jdbc:h2:mem:"+UUID.randomUUID()+";MODE=PostgreSQL;DB_CLOSE_DELAY=-1";db=new Database(url,true);s=new WorkshopService(db,NOW);s.login("admin","123456");}
     @AfterEach void end(){Session.logout();}
     ServiceOrder open(){return s.orders().stream().filter(o->o.status()==OrderStatus.OPEN).findFirst().orElseThrow();}
-    long rejected(){long id=open().id();s.saveDiagnosis(id,"Diagnóstico");s.addService(id,"Revisão","1","50");s.consumePart(id,s.parts().get(0).id(),"2");s.decideBudget(id,false,"Cliente");return id;}
+    long rejected(){long id=open().id();mechanic(() -> s.saveDiagnosis(id,"Diagnóstico"));mechanic(() -> s.addService(id,"Revisão","1","50"));s.consumePart(id,s.parts().get(0).id(),"2");s.decideBudget(id,false,"Cliente");return id;}
     @Test void cancelReturnsStockExactlyOnceAndReleasesVehicle(){
         Part part=s.parts().get(0);long id=rejected();var order=s.order(id);
         s.cancelRejectedOrder(id,"Cliente desistiu");assertEquals(OrderStatus.CANCELLED,s.order(id).status());
@@ -30,8 +36,8 @@ class EvolutionTest {
     @Test void revisionPreservesRejectedBudgetHistoryAndRequiresNewApproval(){
         long id=rejected();var before=s.order(id);int balance=s.parts().get(0).stock();
         s.reviseRejectedOrder(id,"Negociar serviços");assertEquals(OrderStatus.OPEN,s.order(id).status());assertNull(s.order(id).budgetTotal());
-        assertEquals(balance,s.parts().get(0).stock());assertThrows(ValidationException.class,()->s.completeService(id,s.items(id).get(0).id()));
-        s.removeItem(id,s.items(id).get(0).id());s.decideBudget(id,true,"Novo aceite");
+        assertEquals(balance,s.parts().get(0).stock());assertThrows(ValidationException.class,()->mechanic(() -> s.completeService(id,s.items(id).get(0).id())));
+        mechanic(() -> s.removeItem(id,s.items(id).get(0).id()));s.decideBudget(id,true,"Novo aceite");
         assertNotEquals(before.budgetTotal(),s.order(id).budgetTotal());
         assertTrue(s.orderHistory(id).stream().anyMatch(h->h.action().equals("REVISAO")&&h.details().contains(before.budgetTotal().toString())));
     }
@@ -83,12 +89,12 @@ class EvolutionTest {
         assertThrows(ValidationException.class,()->s.recoverPassword("ana",code,PASSWORD+"2"));
     }
     @Test void diagnosisIsRequiredAndExecutionNotesPersist(){
-        long id=open().id();assertThrows(ValidationException.class,()->s.addService(id,"Teste","1","10"));assertThrows(ValidationException.class,()->s.saveDiagnosis(id," "));
-        s.saveDiagnosis(id,"Falha confirmada");s.addService(id,"Reparar","1","10");long item=s.items(id).get(0).id();
-        assertThrows(ValidationException.class,()->s.completeService(id,item,"Antes do aceite"));s.decideBudget(id,true,"Cliente");
-        s.completeService(id,item,"Ajustado e testado");new Database(url,true);
+        long id=open().id();assertThrows(ValidationException.class,()->mechanic(() -> s.addService(id,"Teste","1","10")));assertThrows(ValidationException.class,()->mechanic(() -> s.saveDiagnosis(id," ")));
+        mechanic(() -> s.saveDiagnosis(id,"Falha confirmada"));mechanic(() -> s.addService(id,"Reparar","1","10"));long item=s.items(id).get(0).id();
+        assertThrows(ValidationException.class,()->mechanic(() -> s.completeService(id,item,"Antes do aceite")));s.decideBudget(id,true,"Cliente");
+        mechanic(() -> s.completeService(id,item,"Ajustado e testado"));new Database(url,true);
         assertEquals("Ajustado e testado",s.items(id).get(0).observations());assertTrue(s.items(id).get(0).completed());
-        assertThrows(ValidationException.class,()->s.completeService(id,item,"x".repeat(2001)));
+        assertThrows(ValidationException.class,()->mechanic(() -> s.completeService(id,item,"x".repeat(2001))));
     }
     @Test void existingPartEntryUpdatesBalancePriceButNotHistoricalOrderPrice(){
         long id=open().id();s.addPart("Nova peça","10","5");Part part=s.parts().stream().filter(p->p.name().equals("Nova peça")).findFirst().orElseThrow();

@@ -71,3 +71,11 @@ Referência funcional: documento de requisitos do repositório, conforme solicit
 - `ba63b86`: resolução de OS rejeitada, usuários e senhas, complementos de UC04/UC05.
 
 Detalhes e limites: [relatórios e acesso](validacao-correcoes-relatorios.md) e [evolução funcional](validacao-evolucao.md). O documento da primeira entrega descreve limites históricos que foram resolvidos na segunda.
+
+## Correção posterior — permissões exclusivas
+
+Conforme esclarecimento do grupo: somente mecânico registra diagnóstico e inclui, remove ou conclui serviços. Somente gerente (administrador) cadastra, repõe, consome ou remove peças e consulta movimentações. O atendente não executa essas operações. Interface e camada de serviço aplicam as mesmas regras; remover item depende do tipo selecionado. A devolução automática no cancelamento continua sendo parte da transação de cancelamento da OS, sem conceder edição manual de estoque ao atendente.
+
+Testes de fluxo foram ajustados para alternar explicitamente entre os perfis responsáveis. Testes adicionais exercitam bloqueios, preservação dos dados após negativa e botões da ficha para os três perfis.
+
+Validação da correção: `mvn -B -Ppostgres-check package` passou com 67 testes (incluindo PostgreSQL real). Após acrescentar as três verificações de interface por perfil, `mvn -B -Dtest=JavaFxAuditTest test` passou com os 10 testes de interface. Nenhuma falha, erro ou teste ignorado. São 70 casos distintos validados entre as duas execuções.
