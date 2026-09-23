@@ -6,6 +6,22 @@ import java.util.*;
 
 /** JDBC somente: validacoes e transicoes de estado pertencem ao service. */
 public final class WorkshopDao {
+    public List<OrderReport.Row> report(Connection c, ReportFilter filter) throws SQLException {
+        StringBuilder sql = new StringBuilder("SELECT o.id,c.name,v.plate,o.entry_date,o.status,o.budget_total " +
+            "FROM service_order o JOIN customer c ON c.id=o.customer_id JOIN vehicle v ON v.id=o.vehicle_id WHERE 1=1");
+        List<Object> args = new ArrayList<>();
+        if (filter.from() != null) { sql.append(" AND o.entry_date>=?"); args.add(filter.from()); }
+        if (filter.to() != null) { sql.append(" AND o.entry_date<=?"); args.add(filter.to()); }
+        if (filter.status() != null) { sql.append(" AND o.status=?"); args.add(filter.status().name()); }
+        if (!filter.search().isBlank()) {
+            sql.append(" AND (LOWER(c.name) LIKE ? ESCAPE '!' OR LOWER(v.plate) LIKE ? ESCAPE '!')");
+            String term = "%" + filter.search().toLowerCase(Locale.ROOT).replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+            args.add(term); args.add(term);
+        }
+        sql.append(" ORDER BY o.entry_date DESC,o.id DESC");
+        return query(c, sql.toString(), r -> new OrderReport.Row(r.getLong(1),r.getString(2),r.getString(3),
+            r.getObject(4,java.time.LocalDate.class),OrderStatus.valueOf(r.getString(5)),r.getBigDecimal(6)),args.toArray());
+    }
     @FunctionalInterface private interface Mapper<T> { T map(ResultSet r) throws SQLException; }
     private <T> List<T> query(Connection c, String sql, Mapper<T> mapper, Object... args) throws SQLException {
         try (PreparedStatement p = c.prepareStatement(sql)) {

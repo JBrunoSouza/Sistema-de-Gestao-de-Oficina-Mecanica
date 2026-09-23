@@ -71,7 +71,7 @@ A aplicação foi projetada para funcionamento **desktop e local**, utilizando u
 - Registro do diagnóstico técnico.
 - Adição de serviços recomendados e seus respectivos valores.
 - Marcação de serviços como concluídos.
-- Registro de observações opcionais conforme a especificação do documento de requisitos.
+- Diagnóstico em texto; observações separadas por serviço ainda não implementadas.
 - Validação de diagnóstico obrigatório.
 
 ### Controle de Estoque
@@ -106,9 +106,33 @@ A aplicação foi projetada para funcionamento **desktop e local**, utilizando u
 
 ### Relatórios
 
-- Exibição da lista atual de registros.
-- Consulta de faturamento de ordens de serviço fechadas.
-- Exportação do relatório em documento pdf.
+- Acesso exclusivo ao perfil **Gerente**.
+- Filtros combinados por data inicial/final de **entrada**, status e nome do cliente ou placa.
+- Datas em `dd/mm/aaaa`, inclusive nas duas extremidades. Campo vazio significa sem limite.
+- Quantidade de ordens, quantidade de fechadas e valor recebido nas OS fechadas do resultado filtrado.
+- **Aplicar filtros** atualiza a consulta. **Limpar** retorna à base completa. Alterar filtros desabilita a exportação até aplicar novamente.
+- **Exportar PDF** salva exatamente as linhas, filtros e totais exibidos, em A4 paisagem, com cabeçalho repetido, paginação e quebra de nomes longos.
+- O valor de uma OS sem decisão aparece como **Não decidido**; ordens aprovadas/rejeitadas não entram no recebido. Este relatório usa a data de entrada da OS, não a data de recebimento financeiro.
+- Consulta e exportação em segundo plano para manter a janela responsiva. Relatório vazio também pode ser exportado.
+
+### Login e atualização do banco
+
+- Contas de demonstração: `admin` (gerente), `ana` (atendente) e `carlos` (mecânico), todas com senha `123456`. São dados fictícios para uso acadêmico local.
+- A migração 1 → 2 cria as contas de demonstração ausentes em bancos antigos, preservando clientes, veículos, OS e as contas/senhas existentes. Não é necessário excluir o volume do PostgreSQL.
+- Consultas exigem sessão; comandos continuam verificando o perfil. Navegação e atalhos respeitam as permissões, e sair remove os atalhos anteriores.
+- Não há gestão completa de usuários, troca de senha ou recuperação. Os hashes atuais permanecem SHA-256 sem salt; estas contas não são uma configuração de produção.
+
+### Testes
+
+```sh
+mvn clean test
+# Inclui PostgreSQL 15 temporário, baixado pelo Maven, sem Docker:
+mvn clean -Ppostgres-check test
+# Testes PostgreSQL apenas:
+mvn clean -Ppostgres-check -Dtest=PostgresIntegrationTest test
+```
+
+Os testes comuns usam H2 isolado e o toolkit JavaFX real (requer sessão gráfica). O perfil `postgres-check` inicia um servidor PostgreSQL local temporário em porta livre e o encerra ao terminar. Nenhum teste usa o banco da aplicação. O primeiro uso baixa os binários de teste. Imagens de verificação de tela/PDF ficam em `target/qa`.
 
 
 ## Tecnologias Utilizadas
@@ -132,6 +156,7 @@ Antes de executar o projeto, certifique-se de que as seguintes ferramentas estã
 - **Maven 3.9 ou superior**
 - **Docker**
 - **Docker Compose**
+- Docker Compose com suporte a `up --wait` para usar `iniciar.cmd` (o script aguarda o healthcheck do banco).
 
 Verifique as versões instaladas:
 

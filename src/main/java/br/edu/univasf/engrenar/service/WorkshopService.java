@@ -34,11 +34,15 @@ public final class WorkshopService {
     }
 
     public void login(String username, String passwordDigitada) {
+        Session.logout();
+        if (username == null || username.isBlank() || passwordDigitada == null || passwordDigitada.isEmpty())
+            throw new ValidationException("auth", "Informe usuário e senha.");
+        String login = username.strip();
         String hashDigitado = hash(passwordDigitada);
 
         db.transaction(c -> {
             try {
-                AppUser user = dao.findUserByUsername(c, username);
+                AppUser user = dao.findUserByUsername(c, login);
 
                 if (user == null || !user.passwordHash().equals(hashDigitado)) {
                     throw new ValidationException("auth", "Usuário ou senha incorretos.");
@@ -51,14 +55,29 @@ public final class WorkshopService {
         });
     }
 
-    public List<Customer> customers() { return db.transaction(dao::customers); }
-    public List<Vehicle> vehicles() { return db.transaction(dao::vehicles); }
-    public List<ServiceOrder> orders() { return db.transaction(dao::orders); }
-    public List<Part> parts() { return db.transaction(dao::parts); }
-    public List<OrderItem> items(long id) { return db.transaction(c -> dao.items(c, id)); }
-    public ServiceOrder order(long id) { return db.transaction(c -> requiredOrder(c, id)); }
-    public Vehicle vehicle(long id) { return db.transaction(c -> dao.vehicle(c, id, false)); }
+    // All profiles need these reads to display customer/vehicle/item data in an OS.
+    public List<Customer> customers() { requireAuthenticated(); return db.transaction(dao::customers); }
+    public List<Vehicle> vehicles() { requireAuthenticated(); return db.transaction(dao::vehicles); }
+    public List<ServiceOrder> orders() { requireAuthenticated(); return db.transaction(dao::orders); }
+    public List<Part> parts() { requireAuthenticated(); return db.transaction(dao::parts); }
+    public List<OrderItem> items(long id) { requireAuthenticated(); return db.transaction(c -> dao.items(c, id)); }
+    public ServiceOrder order(long id) { requireAuthenticated(); return db.transaction(c -> requiredOrder(c, id)); }
+    public Vehicle vehicle(long id) { requireAuthenticated(); return db.transaction(c -> dao.vehicle(c, id, false)); }
+    private void requireAuthenticated() { requireRole(Role.values()); }
     public LocalDate today() { return LocalDate.now(clock); }
+    public OrderReport report(ReportFilter filter) {
+        requireRole(Role.GERENTE);
+        if (filter == null) throw new ValidationException("filter", "Informe os filtros do relatório.");
+        if (filter.from() != null && filter.to() != null && filter.from().isAfter(filter.to()))
+            throw new ValidationException("from", "A data inicial não pode ser posterior à data final.");
+        if (filter.search().length() > 150) throw new ValidationException("search", "Pesquisa: máximo de 150 caracteres.");
+        return db.transaction(c -> new OrderReport(filter,LocalDateTime.now(clock),dao.report(c,filter)));
+    }
+
+    public void exportReport(OrderReport report, java.nio.file.Path target) throws java.io.IOException {
+        requireRole(Role.GERENTE);
+        new ReportPdfExporter().write(report,target);
+    }
     public BigDecimal receivedTotal() {
         requireRole(Role.GERENTE);
         return orders().stream().filter(o -> o.status() == OrderStatus.CLOSED)

@@ -102,6 +102,7 @@ public final class MainWindow extends BorderPane {
         btnSair.setMaxWidth(Double.MAX_VALUE);
         btnSair.setStyle("-fx-text-fill: #ff9292;");
         btnSair.setOnAction(e -> {
+            primaryStage.getScene().getAccelerators().clear();
             Session.logout();
             LoginForm loginForm = new LoginForm(service, () -> {
                 MainWindow novaMain = new MainWindow(primaryStage, service, dataPath);
@@ -136,8 +137,9 @@ public final class MainWindow extends BorderPane {
     }
 
     public void setupKeyShortcuts(Scene scene) {
-        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.O, KeyCombination.CONTROL_DOWN), () -> showPage("Ordens de serviço"));
-        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN), () -> showPage("Veículos"));
+        scene.getAccelerators().clear();
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.O, KeyCombination.CONTROL_DOWN), () -> run(() -> showPage("Ordens de serviço")));
+        if (canOpen("Veículos")) scene.getAccelerators().put(new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN), () -> run(() -> showPage("Veículos")));
     }
 
     private Button button(String text, String id, Runnable action) {
@@ -222,7 +224,18 @@ public final class MainWindow extends BorderPane {
         return box;
     }
 
+    private boolean canOpen(String name) {
+        AppUser user = Session.getUser();
+        if (user == null) return false;
+        return switch (name) {
+            case "Clientes", "Veículos" -> user.role() != Role.MECANICO;
+            case "Estoque", "Relatórios" -> user.role() == Role.GERENTE;
+            default -> true;
+        };
+    }
+
     private void showPage(String name) {
+        if (!canOpen(name)) throw new ValidationException("auth", "Seu perfil não tem acesso a esta página.");
         currentPage = name;
         navButtons.forEach((k, b) -> {
             b.getStyleClass().remove("nav-button-active");
@@ -524,6 +537,7 @@ public final class MainWindow extends BorderPane {
     }
 
     private void customerForm(Consumer<Customer> saved) {
+        if (!canOpen("Clientes")) throw new ValidationException("auth", "Seu perfil não pode cadastrar clientes.");
         FxForm f = new FxForm();
         Stage d = dialog("Cadastrar cliente", f);
 
@@ -554,6 +568,7 @@ public final class MainWindow extends BorderPane {
     }
 
     private void vehicleForm(Customer selected, Consumer<Vehicle> saved) {
+        if (!canOpen("Veículos")) throw new ValidationException("auth", "Seu perfil não pode cadastrar veículos.");
         FxForm f = new FxForm();
         Stage d = dialog("Cadastrar veículo", f);
 
@@ -583,6 +598,7 @@ public final class MainWindow extends BorderPane {
     }
 
     private void orderForm() {
+        if (!canOpen("Clientes")) throw new ValidationException("auth", "Seu perfil não pode abrir ordens de serviço.");
         FxForm f = new FxForm();
         Stage d = dialog("Abrir ordem de serviço", f);
 
@@ -726,6 +742,8 @@ public final class MainWindow extends BorderPane {
             service.saveDiagnosis(order.id(), diagnosis.getText());
             notice("Diagnóstico salvo.", false);
         });
+        saveDiag.setDisable(Session.getUser().role() == Role.ATENDENTE || order.status() != OrderStatus.OPEN);
+        diagnosis.setEditable(!saveDiag.isDisabled());
 
         top.getChildren().addAll(complaint, diagLabel, diagnosis, saveDiag);
         panel.setTop(top);
@@ -753,10 +771,11 @@ public final class MainWindow extends BorderPane {
             detail(order.id());
         });
 
-        add.setDisable(order.status() != OrderStatus.OPEN);
-        part.setDisable(order.status() != OrderStatus.OPEN);
-        remove.setDisable(order.status() != OrderStatus.OPEN);
-        complete.setDisable(order.status() != OrderStatus.APPROVED);
+        boolean canExecute = Session.getUser().role() != Role.ATENDENTE;
+        add.setDisable(!canExecute || order.status() != OrderStatus.OPEN);
+        part.setDisable(!canExecute || order.status() != OrderStatus.OPEN);
+        remove.setDisable(!canExecute || order.status() != OrderStatus.OPEN);
+        complete.setDisable(!canExecute || order.status() != OrderStatus.APPROVED);
 
         actions.getChildren().addAll(add, part, remove, complete);
         panel.setBottom(actions);
@@ -896,7 +915,7 @@ public final class MainWindow extends BorderPane {
             detail(order.id());
             notice("OS fechada. Veículo liberado para novo atendimento.", false);
         }));
-        close.setDisable(order.status() != OrderStatus.APPROVED);
+        close.setDisable(Session.getUser().role() == Role.MECANICO || order.status() != OrderStatus.APPROVED);
         f.extra(close);
         return f;
     }
@@ -968,19 +987,6 @@ public final class MainWindow extends BorderPane {
     }
 
     private void reportsPage(BorderPane pagePane) {
-        pagePane.setTop(header("Relatório local", "Resumo da base atual; filtros e exportação ficam para a próxima entrega."));
-
-        List<ServiceOrder> orders = service.orders();
-        TableView<OrderRow> table = createOrdersTable();
-        table.setItems(loadOrderRows(orders));
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
-        pagePane.setCenter(table);
-
-        Label summary = new Label("Recebido em ordens fechadas: " + money(service.receivedTotal()) + "    |    Ordens registradas: " + orders.size());
-        summary.getStyleClass().add("field-label");
-        HBox bottom = new HBox(summary);
-        bottom.setPadding(new Insets(16, 0, 0, 0));
-        pagePane.setBottom(bottom);
+        pagePane.setCenter(new ReportsPane(primaryStage, service));
     }
 }

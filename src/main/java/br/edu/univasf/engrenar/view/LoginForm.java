@@ -68,6 +68,9 @@ public final class LoginForm extends StackPane {
                 errorLabel.setText(ex.getMessage());
                 txtUser.getStyleClass().add("error-field");
                 txtPass.getStyleClass().add("error-field");
+            } catch (RuntimeException ex) {
+                br.edu.univasf.engrenar.model.Session.logout();
+                errorLabel.setText("Não foi possível conectar ao banco. Verifique o PostgreSQL e tente novamente.");
             }
         });
 

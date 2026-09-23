@@ -1,7 +1,7 @@
 package br.edu.univasf.engrenar.model;
 
 public final class Session {
-    private static AppUser currentUser;
+    private static volatile AppUser currentUser;
 
     private Session() {
         // Construtor privado para evitar que a classe seja instanciada com "new Session()"

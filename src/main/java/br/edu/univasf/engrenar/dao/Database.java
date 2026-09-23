@@ -32,6 +32,19 @@ public final class Database {
                     }
                 }
 
+                // Authentication data is independent of the demonstration seed. Old
+                // installations already have app_meta=1, but have no app_user rows.
+                // Re-running this migration never changes an existing account.
+                // Lock the existing migration marker so concurrent upgrades serialize.
+                try (var versions = s.executeQuery("SELECT version FROM app_meta FOR UPDATE")) {
+                    boolean needsUpgrade = versions.next() && versions.getInt(1) < 2;
+                    if (needsUpgrade) {
+                        if (seed) script(c, "/db/users.sql");
+                        try (var migration = c.createStatement()) {
+                            migration.executeUpdate("UPDATE app_meta SET version=2 WHERE version=1");
+                        }
+                    }
+                }
                 c.commit();
 
             } catch (Exception e) {
