@@ -24,7 +24,7 @@ class WorkshopServiceTest {
         service=new WorkshopService(db,CLOCK);customer=service.addCustomer("Ana","87999999999","ana@example.com");
     }
     private Vehicle vehicle() {return service.addVehicle("ABC1D23","Fiat","Argo","42000","2021",customer.id());}
-    private ServiceOrder order() { Vehicle v=vehicle();return open(v); }
+    private ServiceOrder order() { Vehicle v=vehicle();ServiceOrder o=open(v);service.saveDiagnosis(o.id(),"Diagnóstico de teste");return o; }
     private ServiceOrder open(Vehicle v) {return service.openOrder(customer.id(),v.id(),"Ruído ao frear","16/09/2026","42100","Matheus");}
     private ValidationException invalid(String field,org.junit.jupiter.api.function.Executable action) {ValidationException e=assertThrows(ValidationException.class,action);assertTrue(e.fields().containsKey(field),e.getMessage());return e;}
 
@@ -89,7 +89,7 @@ class WorkshopServiceTest {
     }
     @Test void realFilePersistsAfterDatabaseReinitialization(@TempDir Path dir) {
         String url="jdbc:h2:file:"+dir.resolve("durable").toString().replace('\\','/');WorkshopService first=new WorkshopService(new Database(url,true),CLOCK);
-        Customer c=first.addCustomer("Persistente","123","persistente@example.com");Vehicle v=first.addVehicle("XYZ9A12","Ford","Ka","0","2019",c.id());ServiceOrder o=first.openOrder(c.id(),v.id(),"Teste","16/09/2026","0","Matheus");first.addService(o.id(),"Teste real","1","123,45");first.decideBudget(o.id(),true,"Matheus");
+        Customer c=first.addCustomer("Persistente","123","persistente@example.com");Vehicle v=first.addVehicle("XYZ9A12","Ford","Ka","0","2019",c.id());ServiceOrder o=first.openOrder(c.id(),v.id(),"Teste","16/09/2026","0","Matheus");first.saveDiagnosis(o.id(),"Diagnóstico persistido");first.addService(o.id(),"Teste real","1","123,45");first.decideBudget(o.id(),true,"Matheus");
         WorkshopService reopened=new WorkshopService(new Database(url,true),CLOCK);assertEquals(4,reopened.customers().size());assertEquals(4,reopened.vehicles().size());assertEquals(5,reopened.orders().size());assertEquals(OrderStatus.APPROVED,reopened.order(o.id()).status());assertEquals(new BigDecimal("123.45"),reopened.order(o.id()).budgetTotal());
     }
     @Test void seedIncludesEveryDemoStatusAndIsNotDuplicated() {String url="jdbc:h2:mem:"+UUID.randomUUID()+";DB_CLOSE_DELAY=-1";WorkshopService s=new WorkshopService(new Database(url,true));new Database(url,true);assertEquals(3,s.customers().size());assertEquals(3,s.vehicles().size());assertEquals(Set.of(OrderStatus.OPEN,OrderStatus.APPROVED,OrderStatus.REJECTED,OrderStatus.CLOSED),new HashSet<>(s.orders().stream().map(ServiceOrder::status).toList()));for(ServiceOrder o:s.orders())if(o.budgetTotal()!=null)assertEquals(o.budgetTotal(),s.budget(o.id()).total());}

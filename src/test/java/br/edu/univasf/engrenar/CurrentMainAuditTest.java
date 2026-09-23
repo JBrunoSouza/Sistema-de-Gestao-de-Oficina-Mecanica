@@ -41,7 +41,7 @@ class CurrentMainAuditTest {
     }
     @Test void upgradeMustProvisionLoginForExistingDatabase() {
         // Represents the old schema: app_meta exists, app_user does not.
-        db.transaction(c->{c.createStatement().execute("DROP TABLE app_user");c.createStatement().execute("UPDATE app_meta SET version=1");return null;});
+        db.transaction(c->{c.createStatement().execute("DROP TABLE password_reset");c.createStatement().execute("DROP TABLE app_user");c.createStatement().execute("UPDATE app_meta SET version=1");return null;});
         new Database(url,true);
         long count=db.transaction(c->{try(var r=c.createStatement().executeQuery("SELECT COUNT(*) FROM app_user")){r.next();return r.getLong(1);}});
         assertTrue(count>0,"Upgrade deixou o banco sem usuarios e sem alternativa de cadastro");

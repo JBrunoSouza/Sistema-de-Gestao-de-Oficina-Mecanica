@@ -16,45 +16,69 @@ public final class WorkshopService {
     public WorkshopService(Database db) { this(db, Clock.systemDefaultZone()); }
     public WorkshopService(Database db, Clock clock) { this.db = db; this.clock = clock; }
 
-    // 1. Metodo privado para gerar o SHA-256
-    private String hash(String password) {
-        try {
-            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] bytes = digest.digest(password.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : bytes) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
-        } catch (Exception e) {
-            throw new RuntimeException("Erro interno de criptografia.", e);
-        }
-    }
-
-    public void login(String username, String passwordDigitada) {
+    public void login(String username, String password) {
         Session.logout();
-        if (username == null || username.isBlank() || passwordDigitada == null || passwordDigitada.isEmpty())
+        if (username == null || username.isBlank() || password == null || password.length()>128)
             throw new ValidationException("auth", "Informe usuário e senha.");
-        String login = username.strip();
-        String hashDigitado = hash(passwordDigitada);
-
-        db.transaction(c -> {
-            try {
-                AppUser user = dao.findUserByUsername(c, login);
-
-                if (user == null || !user.passwordHash().equals(hashDigitado)) {
-                    throw new ValidationException("auth", "Usuário ou senha incorretos.");
-                }
-                Session.login(user);
-                return null;
-            } catch (SQLException e) {
-                throw new RuntimeException("Erro ao acessar banco de dados", e);
+        AppUser authenticated = db.transaction(c -> {
+            AppUser user = dao.lockUser(c, username.strip());
+            if (user == null || !Passwords.verify(password,user.passwordHash()))
+                throw new ValidationException("auth", "Usuário ou senha incorretos.");
+            if (!user.passwordHash().startsWith("pbkdf2$")) {
+                String secure = Passwords.hash(password);
+                dao.execute(c,"UPDATE app_user SET password_hash=? WHERE id=?",secure,user.id());
+                user = new AppUser(user.id(),user.name(),user.username(),secure,user.role());
             }
+            return user;
         });
+        Session.login(authenticated);
     }
 
+    public List<UserInfo> users() { requireRole(Role.GERENTE); return db.transaction(dao::users); }
+    public void createUser(String name,String username,String password,Role role) {
+        requireRole(Role.GERENTE);
+        String n=required(name,"name","o nome",150),u=required(username,"username","o usuário",50).toLowerCase(Locale.ROOT);
+        if(!u.matches("[a-z0-9._-]{3,50}"))throw new ValidationException("username","Use 3 a 50 letras, números, ponto, hífen ou sublinhado.");
+        if(role==null)throw new ValidationException("role","Selecione um perfil.");
+        Passwords.validate(password);String hash=Passwords.hash(password);
+        db.transaction(c->{try{dao.insert(c,"INSERT INTO app_user(name,username,password_hash,role) VALUES(?,?,?,?)",n,u,hash,role.name());}
+            catch(SQLException e){if("23505".equals(e.getSQLState()))throw new ValidationException("username","Usuário já cadastrado.");throw e;}return null;});
+    }
+    public void changePassword(String current,String password) {
+        requireAuthenticated();Passwords.validate(password);AppUser session=Session.getUser();
+        AppUser changed=db.transaction(c->{AppUser user=dao.lockUser(c,session.username());
+            if(user==null||!Passwords.verify(current,user.passwordHash()))throw new ValidationException("current","Senha atual incorreta.");
+            if(Passwords.verify(password,user.passwordHash()))throw new ValidationException("password","Escolha uma senha diferente da atual.");
+            String hash=Passwords.hash(password);dao.execute(c,"UPDATE app_user SET password_hash=? WHERE id=?",hash,user.id());
+            dao.execute(c,"DELETE FROM password_reset WHERE user_id=?",user.id());
+            return new AppUser(user.id(),user.name(),user.username(),hash,user.role());});
+        Session.login(changed);
+    }
+    public String issueResetCode(String username,String managerPassword) {
+        requireRole(Role.GERENTE);AppUser manager=Session.getUser();
+        return db.transaction(c->{AppUser actual=dao.findUserByUsername(c,manager.username());
+            if(actual==null||!Passwords.verify(managerPassword,actual.passwordHash()))throw new ValidationException("current","Confirme a senha do gerente.");
+            AppUser target=dao.lockUser(c,required(username,"username","o usuário",50));
+            if(target==null)throw new ValidationException("username","Usuário não encontrado.");
+            String code=Passwords.token();dao.execute(c,"DELETE FROM password_reset WHERE user_id=?",target.id());
+            dao.execute(c,"INSERT INTO password_reset(user_id,token_hash,expires_at) VALUES(?,?,?)",target.id(),Passwords.digest(code),LocalDateTime.now(clock).plusMinutes(15));return code;});
+    }
+    public void recoverPassword(String username,String code,String password) {
+        Passwords.validate(password);
+        if(username==null||code==null||code.length()>100)throw new ValidationException("auth","Código inválido ou expirado.");
+        long id=db.transaction(c->{AppUser user=dao.lockUser(c,username.strip());
+            if(user==null)throw new ValidationException("auth","Código inválido ou expirado.");
+            try(var p=c.prepareStatement("SELECT token_hash,expires_at FROM password_reset WHERE user_id=?")){
+                p.setLong(1,user.id());try(var r=p.executeQuery()){
+                    if(!r.next()||!r.getObject(2,LocalDateTime.class).isAfter(LocalDateTime.now(clock))||
+                        !java.security.MessageDigest.isEqual(r.getString(1).getBytes(java.nio.charset.StandardCharsets.UTF_8),Passwords.digest(code.strip()).getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+                        throw new ValidationException("auth","Código inválido ou expirado.");
+                }
+            }
+            dao.execute(c,"UPDATE app_user SET password_hash=? WHERE id=?",Passwords.hash(password),user.id());
+            dao.execute(c,"DELETE FROM password_reset WHERE user_id=?",user.id());return user.id();});
+        if(Session.getUser()!=null&&Session.getUser().id()==id)Session.logout();
+    }
     // All profiles need these reads to display customer/vehicle/item data in an OS.
     public List<Customer> customers() { requireAuthenticated(); return db.transaction(dao::customers); }
     public List<Vehicle> vehicles() { requireAuthenticated(); return db.transaction(dao::vehicles); }
@@ -191,7 +215,7 @@ public final class WorkshopService {
         String text = required(description,"description","a descrição do serviço",200);
         int q = (int)integer(quantity,"quantity","Quantidade",1,9999);
         BigDecimal price = money(unitPrice);
-        db.transaction(c -> { editable(c,orderId); dao.insert(c,"INSERT INTO order_item(order_id,kind,description,quantity,unit_price) VALUES(?,'SERVICE',?,?,?)",orderId,text,q,price); return null; });
+        db.transaction(c -> { ServiceOrder order=editable(c,orderId);required(order.diagnosis(),"diagnosis","o diagnóstico técnico antes de incluir serviços",4000); dao.insert(c,"INSERT INTO order_item(order_id,kind,description,quantity,unit_price) VALUES(?,'SERVICE',?,?,?)",orderId,text,q,price); return null; });
     }
     public void addPart(String name, String unitPrice, String quantity) {
         requireRole(Role.GERENTE);
@@ -199,7 +223,17 @@ public final class WorkshopService {
         BigDecimal price = money(unitPrice);
         int q = (int)integer(quantity,"quantity","Quantidade de entrada",1,999999);
         db.transaction(c -> {
-            try { dao.insert(c,"INSERT INTO part(name,unit_price,stock) VALUES(?,?,?)",text,price,q); }
+            try {
+                Part existing=null;
+                for(Part p:dao.parts(c))if(p.name().equals(text)){existing=dao.part(c,p.id(),true);break;}
+                long id;
+                if(existing==null)id=dao.insert(c,"INSERT INTO part(name,unit_price,stock) VALUES(?,?,?)",text,price,q);
+                else {
+                    if((long)existing.stock()+q>999999999)throw new ValidationException("quantity","Limite de estoque excedido.");
+                    id=existing.id();dao.execute(c,"UPDATE part SET stock=stock+?,unit_price=? WHERE id=?",q,price,id);
+                }
+                movement(c,id,null,q,"Entrada de peças");
+            }
             catch (SQLException e) { if ("23505".equals(e.getSQLState())) throw new ValidationException("name","Peça já cadastrada. Use Repor selecionada."); throw e; }
             return null;
         });
@@ -211,7 +245,7 @@ public final class WorkshopService {
             Part part = id == null ? null : dao.part(c,id,true);
             if (part == null) throw new ValidationException("part","Selecione uma peça.");
             if ((long)part.stock()+q > 999999999) throw new ValidationException("quantity","Limite de estoque excedido.");
-            dao.execute(c,"UPDATE part SET stock=stock+? WHERE id=?",q,id); return null;
+            dao.execute(c,"UPDATE part SET stock=stock+? WHERE id=?",q,id); movement(c,id,null,q,"Reposição");return null;
         });
     }
     public void consumePart(long orderId, Long partId, String quantity) {
@@ -224,6 +258,7 @@ public final class WorkshopService {
             if (part.stock() < q) throw new ValidationException("quantity","Estoque insuficiente. Saldo atual: " + part.stock() + ".");
             dao.execute(c,"UPDATE part SET stock=stock-? WHERE id=?",q,partId);
             dao.insert(c,"INSERT INTO order_item(order_id,kind,description,quantity,unit_price,part_id) VALUES(?,'PART',?,?,?,?)",orderId,part.name(),q,part.unitPrice(),partId);
+            movement(c,partId,orderId,-q,"Consumo na OS");
             return null;
         });
     }
@@ -232,7 +267,7 @@ public final class WorkshopService {
         db.transaction(c -> {
             editable(c,orderId);
             OrderItem item = dao.items(c,orderId).stream().filter(i -> i.id()==itemId).findFirst().orElseThrow(() -> new ValidationException("item","Selecione um item desta OS."));
-            if (item.partId()!=null) dao.execute(c,"UPDATE part SET stock=stock+? WHERE id=?",item.quantity(),item.partId());
+            if (item.partId()!=null) returnPart(c,item,orderId,"Item removido");
             dao.execute(c,"DELETE FROM order_item WHERE id=?",itemId); return null;
         });
     }
@@ -255,14 +290,23 @@ public final class WorkshopService {
             ServiceOrder order = editable(c,id);
             Budget budget = budget(c,order);
             dao.execute(c,"UPDATE service_order SET status=?,decision_at=?,decision_by=?,budget_total=? WHERE id=?",approved ? "APPROVED" : "REJECTED",LocalDateTime.now(clock),person,budget.total(),id);
+            snapshot(c,dao.order(c,id,false),approved?"APROVACAO":"REJEICAO","Decisão registrada por "+person);
             return budget(c,dao.order(c,id,false));
         });
     }
     public void completeService(long id, long itemId) {
+        completeService(id,itemId,"");
+    }
+    public void completeService(long id,long itemId,String observations) {
         requireRole(Role.GERENTE, Role.MECANICO);
+        String note=observations==null?"":observations.strip();
+        if(note.length()>2000)throw new ValidationException("observations","Observações: máximo de 2000 caracteres.");
         db.transaction(c -> {
-            if (requiredOrder(c,id).status()!=OrderStatus.APPROVED) throw new ValidationException("order","A execução exige orçamento aprovado.");
-            if (dao.execute(c,"UPDATE order_item SET completed=TRUE WHERE id=? AND order_id=? AND kind='SERVICE'",itemId,id)==0) throw new ValidationException("item","Selecione um serviço desta OS.");
+            ServiceOrder order=requiredOrder(c,id);
+            if (order.status()!=OrderStatus.APPROVED) throw new ValidationException("order","A execução exige orçamento aprovado.");
+            required(order.diagnosis(),"diagnosis","o diagnóstico técnico",4000);
+            if (dao.execute(c,"UPDATE order_item SET completed=TRUE,observations=? WHERE id=? AND order_id=? AND kind='SERVICE'",note,itemId,id)==0) throw new ValidationException("item","Selecione um serviço desta OS.");
+            event(c,id,"SERVICO_CONCLUIDO","Item "+itemId+": "+note);
             return null;
         });
     }
@@ -283,5 +327,41 @@ public final class WorkshopService {
             dao.execute(c,"UPDATE service_order SET status='CLOSED',payment_method=?,pickup_date=? WHERE id=?",method,date,id);
             dao.execute(c,"DELETE FROM active_order WHERE order_id=?",id); return null;
         });
+    }
+
+    public List<HistoryEntry> orderHistory(long id){requireAuthenticated();return db.transaction(c->dao.orderHistory(c,id));}
+    public List<HistoryEntry> stockHistory(long id){requireRole(Role.GERENTE,Role.MECANICO);return db.transaction(c->dao.stockHistory(c,id));}
+    private void event(Connection c,long id,String type,String details)throws SQLException{
+        dao.insert(c,"INSERT INTO order_event(order_id,occurred_at,actor,event_type,details) VALUES(?,?,?,?,?)",id,LocalDateTime.now(clock),Session.getUser().username(),type,details);
+    }
+    private void snapshot(Connection c,ServiceOrder order,String type,String reason)throws SQLException{
+        event(c,order.id(),type,reason+" | Estado: "+order.status()+" | Total: "+order.budgetTotal()+" | Decisão: "+order.decisionAt()+" | Responsável: "+order.decisionBy()+" | Diagnóstico: "+order.diagnosis());
+        for(OrderItem item:dao.items(c,order.id()))event(c,order.id(),"ITEM_"+type,item.toString());
+    }
+    private void movement(Connection c,long part,Long order,int quantity,String reason)throws SQLException{
+        dao.insert(c,"INSERT INTO stock_movement(part_id,order_id,quantity,balance,occurred_at,actor,reason) VALUES(?,?,?,?,?,?,?)",part,order,quantity,dao.part(c,part,false).stock(),LocalDateTime.now(clock),Session.getUser().username(),reason);
+    }
+    private void returnPart(Connection c,OrderItem item,long order,String reason)throws SQLException{
+        Part part=dao.part(c,item.partId(),true);
+        if((long)part.stock()+item.quantity()>999999999)throw new ValidationException("quantity","Devolução excede o limite de estoque. Regularize o saldo antes de cancelar.");
+        dao.execute(c,"UPDATE part SET stock=stock+? WHERE id=?",item.quantity(),part.id());movement(c,part.id(),order,item.quantity(),reason);
+    }
+    public void reviseRejectedOrder(long id,String reason){
+        requireRole(Role.GERENTE,Role.ATENDENTE);String text=required(reason,"reason","o motivo da revisão",1000);
+        db.transaction(c->{ServiceOrder order=requiredOrder(c,id);
+            if(order.status()!=OrderStatus.REJECTED)throw new ValidationException("order","Somente uma OS rejeitada pode voltar para revisão.");
+            snapshot(c,order,"REVISAO",text);
+            dao.execute(c,"UPDATE service_order SET status='OPEN',decision_at=NULL,decision_by=NULL,budget_total=NULL WHERE id=?",id);
+            return null;});
+    }
+    public void cancelRejectedOrder(long id,String reason){
+        requireRole(Role.GERENTE,Role.ATENDENTE);String text=required(reason,"reason","o motivo do cancelamento",1000);
+        db.transaction(c->{ServiceOrder order=requiredOrder(c,id);
+            if(order.status()!=OrderStatus.REJECTED)throw new ValidationException("order","Somente uma OS rejeitada pode ser cancelada por este fluxo.");
+            snapshot(c,order,"CANCELAMENTO",text);
+            List<OrderItem> parts=new ArrayList<>(dao.items(c,id).stream().filter(i->i.partId()!=null).toList());parts.sort(Comparator.comparing(OrderItem::partId));
+            for(OrderItem item:parts)returnPart(c,item,id,"Cancelamento de OS rejeitada");
+            dao.execute(c,"UPDATE service_order SET status='CANCELLED' WHERE id=?",id);
+            dao.execute(c,"DELETE FROM active_order WHERE order_id=?",id);return null;});
     }
 }

@@ -71,7 +71,7 @@ A aplicação foi projetada para funcionamento **desktop e local**, utilizando u
 - Registro do diagnóstico técnico.
 - Adição de serviços recomendados e seus respectivos valores.
 - Marcação de serviços como concluídos.
-- Diagnóstico em texto; observações separadas por serviço ainda não implementadas.
+- Observações opcionais por serviço concluído, persistidas na OS e no histórico.
 - Validação de diagnóstico obrigatório.
 
 ### Controle de Estoque
@@ -93,6 +93,7 @@ A aplicação foi projetada para funcionamento **desktop e local**, utilizando u
 - Registro de aprovação ou rejeição.
 - Persistência da data, responsável e valor total da decisão.
 - Congelamento dos itens e valores após uma decisão de orçamento.
+- OS rejeitada pode ser reaberta para revisão ou cancelada, com motivo obrigatório e histórico. Revisão mantém peças e veículo vinculados; cancelamento devolve as peças uma única vez e libera o veículo.
 
 ### Fechamento de Ordens de Serviço
 
@@ -120,7 +121,9 @@ A aplicação foi projetada para funcionamento **desktop e local**, utilizando u
 - Contas de demonstração: `admin` (gerente), `ana` (atendente) e `carlos` (mecânico), todas com senha `123456`. São dados fictícios para uso acadêmico local.
 - A migração 1 → 2 cria as contas de demonstração ausentes em bancos antigos, preservando clientes, veículos, OS e as contas/senhas existentes. Não é necessário excluir o volume do PostgreSQL.
 - Consultas exigem sessão; comandos continuam verificando o perfil. Navegação e atalhos respeitam as permissões, e sair remove os atalhos anteriores.
-- Não há gestão completa de usuários, troca de senha ou recuperação. Os hashes atuais permanecem SHA-256 sem salt; estas contas não são uma configuração de produção.
+- Gerente cadastra usuários e emite códigos de recuperação após confirmar sua senha. Cada código vale 15 minutos e só pode ser usado uma vez no botão **Esqueci minha senha**.
+- Todos os perfis podem alterar a própria senha informando a atual. Novas senhas exigem 12 a 128 caracteres; PBKDF2-HMAC-SHA256 com 600.000 iterações e salt aleatório. Hashes SHA-256 antigos são atualizados após login válido.
+- Recuperação é assistida por gerente; não envia e-mail. Consulte [validação dos novos fluxos](docs/validacao-evolucao.md).
 
 ### Testes
 

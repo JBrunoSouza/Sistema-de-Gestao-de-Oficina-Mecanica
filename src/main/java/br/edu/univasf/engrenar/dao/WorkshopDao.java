@@ -76,7 +76,7 @@ public final class WorkshopDao {
     public List<ServiceOrder> orders(Connection c) throws SQLException { return query(c, "SELECT * FROM service_order ORDER BY id DESC", this::order); }
     public List<OrderItem> items(Connection c, long orderId) throws SQLException {
         return query(c, "SELECT * FROM order_item WHERE order_id=? ORDER BY id", r -> new OrderItem(r.getLong("id"), r.getLong("order_id"),
-            r.getString("kind"), r.getString("description"), r.getInt("quantity"), r.getBigDecimal("unit_price"), (Long)r.getObject("part_id"), r.getBoolean("completed")), orderId);
+            r.getString("kind"), r.getString("description"), r.getInt("quantity"), r.getBigDecimal("unit_price"), (Long)r.getObject("part_id"), r.getBoolean("completed"),r.getString("observations")), orderId);
     }
     private Part part(ResultSet r) throws SQLException { return new Part(r.getLong("id"), r.getString("name"), r.getBigDecimal("unit_price"), r.getInt("stock")); }
     public List<Part> parts(Connection c) throws SQLException { return query(c, "SELECT * FROM part ORDER BY name", this::part); }
@@ -96,5 +96,17 @@ public final class WorkshopDao {
     public AppUser findUserByUsername(Connection c, String username) throws SQLException {
         return query(c, "SELECT * FROM app_user WHERE username=?", this::appUser, username)
                 .stream().findFirst().orElse(null);
+    }
+    public AppUser lockUser(Connection c,String username)throws SQLException{
+        return query(c,"SELECT * FROM app_user WHERE username=? FOR UPDATE",this::appUser,username).stream().findFirst().orElse(null);
+    }
+    public List<UserInfo> users(Connection c)throws SQLException{
+        return query(c,"SELECT id,name,username,role FROM app_user ORDER BY username",r->new UserInfo(r.getLong(1),r.getString(2),r.getString(3),Role.valueOf(r.getString(4))));
+    }
+    public List<HistoryEntry> orderHistory(Connection c,long id)throws SQLException{
+        return query(c,"SELECT occurred_at,actor,event_type,details FROM order_event WHERE order_id=? ORDER BY id DESC",r->new HistoryEntry(r.getObject(1,java.time.LocalDateTime.class),r.getString(2),r.getString(3),r.getString(4)),id);
+    }
+    public List<HistoryEntry> stockHistory(Connection c,long id)throws SQLException{
+        return query(c,"SELECT occurred_at,actor,reason,quantity,balance,order_id FROM stock_movement WHERE part_id=? ORDER BY id DESC",r->new HistoryEntry(r.getObject(1,java.time.LocalDateTime.class),r.getString(2),r.getString(3),"Quantidade: "+r.getInt(4)+" | Saldo: "+r.getInt(5)+" | OS: "+r.getObject(6)),id);
     }
 }

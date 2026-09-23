@@ -48,7 +48,7 @@ class JavaFxAuditTest {
             Stage stage=new Stage();MainWindow root=new MainWindow(stage,service,"");
             stage.setScene(new Scene(root));
             List<Button> menus=nodes(root).stream().filter(n->n instanceof Button && n.getId()!=null && n.getId().startsWith("nav-")).map(n->(Button)n).toList();
-            assertEquals(role==Role.GERENTE?6:role==Role.ATENDENTE?4:2,menus.size());
+            assertEquals(role==Role.GERENTE?7:role==Role.ATENDENTE?4:2,menus.size());
             for(Button b:menus) b.fire();
             assertFalse(nodes(root).stream().filter(n->n instanceof Label).map(n->((Label)n).getText()).anyMatch(t->t.contains("Não foi possível")));
             stage.close();Session.logout();

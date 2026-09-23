@@ -44,7 +44,9 @@ Os testes JavaFX precisam de sessão gráfica. O perfil PostgreSQL baixa binári
 
 Para executar a aplicação com o banco do projeto, use `iniciar.cmd` com Docker Desktop ativo, ou inicie o banco com Docker Compose, aguarde ficar saudável e rode `mvn javafx:run`.
 
-## Limites conhecidos
+## Limites conhecidos na entrega anterior
+
+Os dois primeiros itens abaixo foram resolvidos na [evolução subsequente](validacao-evolucao.md).
 
 - As contas e hashes SHA-256 demonstrativos foram mantidos para compatibilidade. Gestão de usuários, recuperação e troca de senha permanecem fora desta entrega.
 - A OS rejeitada ainda exige uma decisão futura sobre cancelamento/revisão/liberação de peças e veículo. O comportamento anterior foi preservado; não foi criado um fluxo de cancelamento sem critérios de negócio.

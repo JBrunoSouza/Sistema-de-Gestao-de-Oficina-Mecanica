@@ -14,6 +14,7 @@ public final class Database {
 
         try (Connection c = open()) {
             script(c, "/db/schema.sql");
+            script(c, "/db/evolution.sql");
 
             c.setAutoCommit(false);
 

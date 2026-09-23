@@ -81,6 +81,7 @@ public final class MainWindow extends BorderPane {
         if (role == Role.GERENTE) {
             menuOrder.add("Estoque");
             menuOrder.add("Relatórios");
+            menuOrder.add("Usuários");
         }
 
         for (String name : menuOrder) {
@@ -111,6 +112,7 @@ public final class MainWindow extends BorderPane {
             });
             primaryStage.getScene().setRoot(loginForm);
         });
+        sidebar.getChildren().add(button("Alterar minha senha","change-password",()->AccountsPane.changePassword(primaryStage,service)));
         sidebar.getChildren().add(btnSair);
         Label local = new Label("●  Banco local · PostgreSQL");
         local.getStyleClass().add("db-indicator");
@@ -229,7 +231,7 @@ public final class MainWindow extends BorderPane {
         if (user == null) return false;
         return switch (name) {
             case "Clientes", "Veículos" -> user.role() != Role.MECANICO;
-            case "Estoque", "Relatórios" -> user.role() == Role.GERENTE;
+            case "Estoque", "Relatórios", "Usuários" -> user.role() == Role.GERENTE;
             default -> true;
         };
     }
@@ -252,6 +254,7 @@ public final class MainWindow extends BorderPane {
             case "Ordens de serviço" -> ordersPage(pagePane);
             case "Estoque" -> stockPage(pagePane);
             case "Relatórios" -> reportsPage(pagePane);
+            case "Usuários" -> pagePane.setCenter(new AccountsPane(primaryStage,service));
             default -> dashboard(pagePane);
         }
         content.getChildren().add(pagePane);
@@ -669,7 +672,14 @@ public final class MainWindow extends BorderPane {
         Tab tabClosing = new Tab("Fechamento", closingPanel(order));
         tabClosing.setClosable(false);
 
-        tabs.getTabs().addAll(tabItems, tabBudget, tabClosing);
+        Tab history=new Tab("Histórico",historyArea(service.orderHistory(id)));history.setClosable(false);
+        tabs.getTabs().addAll(tabItems, tabBudget, tabClosing,history);
+        if(order.status()==OrderStatus.REJECTED && Session.getUser().role()!=Role.MECANICO){
+            HBox resolution=new HBox(12,
+                button("Reabrir para revisão","revise-order",()->resolveRejected(id,false)),
+                button("Cancelar e devolver peças","cancel-order",()->resolveRejected(id,true)));
+            pagePane.setBottom(resolution);
+        }
         pagePane.setCenter(tabs);
 
         content.getChildren().add(pagePane);
@@ -767,8 +777,12 @@ public final class MainWindow extends BorderPane {
         Button complete = button("Marcar serviço concluído", "complete-service", () -> {
             ItemRow selected = list.getSelectionModel().getSelectedItem();
             if (selected == null) throw new ValidationException("item", "Selecione um serviço.");
-            service.completeService(order.id(), selected.id());
-            detail(order.id());
+            FxForm form=new FxForm();Stage dialog=dialog("Concluir serviço",form);
+            OrderItem item=service.items(order.id()).stream().filter(i->i.id()==selected.id()).findFirst().orElseThrow();
+            if(!item.kind().equals("SERVICE"))throw new ValidationException("item","Selecione um serviço.");
+            TextArea notes=form.area("observations","Observações da execução (opcional)",item.observations());form.finish();
+            form.extra(primary("Concluir e salvar","save-completion",()->submit(form,()->{service.completeService(order.id(),selected.id(),notes.getText());dialog.close();detail(order.id());})));
+            showDialog(dialog);
         });
 
         boolean canExecute = Session.getUser().role() != Role.ATENDENTE;
@@ -968,12 +982,17 @@ public final class MainWindow extends BorderPane {
             showDialog(d);
         }));
         bottom.setPadding(new Insets(16, 0, 0, 0));
+        bottom.getChildren().add(button("Histórico da peça","stock-history",()->{
+            Part selected=list.getSelectionModel().getSelectedItem();if(selected==null)throw new ValidationException("part","Selecione uma peça.");
+            Alert history=new Alert(Alert.AlertType.INFORMATION);history.initOwner(primaryStage);history.setTitle("Movimentações - "+selected.name());history.getDialogPane().setContent(historyArea(service.stockHistory(selected.id())));history.showAndWait();
+        }));
         pagePane.setBottom(bottom);
     }
 
     private void partForm() {
         FxForm f = new FxForm();
-        Stage d = dialog("Cadastrar peça", f);
+        Stage d = dialog("Entrada de peças", f);
+        f.extra(new Label("Nome já cadastrado: soma a quantidade e atualiza o preço. Itens anteriores de OS mantêm o valor original."));
         TextField name = f.text("name", "Nome *", "");
         TextField price = f.text("price", "Preço unitário (R$) *", "");
         TextField q = f.text("quantity", "Quantidade de entrada *", "");
@@ -988,5 +1007,18 @@ public final class MainWindow extends BorderPane {
 
     private void reportsPage(BorderPane pagePane) {
         pagePane.setCenter(new ReportsPane(primaryStage, service));
+    }
+    private TextArea historyArea(List<HistoryEntry> entries){
+        StringBuilder text=new StringBuilder();
+        for(HistoryEntry e:entries)text.append(e.time().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))).append(" | ").append(e.actor()).append(" | ").append(e.action()).append("\n").append(e.details()).append("\n\n");
+        TextArea area=new TextArea(text.isEmpty()?"Nenhum evento registrado. Eventos anteriores à atualização não são reconstruídos.":text.toString());area.setEditable(false);area.setWrapText(true);area.setPrefSize(720,400);return area;
+    }
+    private void resolveRejected(long id,boolean cancel){
+        FxForm f=new FxForm();Stage d=dialog(cancel?"Cancelar OS rejeitada":"Revisar orçamento rejeitado",f);
+        f.extra(new Label(cancel?"Devolve as peças ao estoque e libera o veículo. Mantém a OS e o histórico.":"Volta para Aberta e permite editar itens. Mantém o veículo e as peças reservados até nova decisão."));
+        TextArea reason=f.area("reason","Motivo obrigatório","");f.finish();
+        f.extra(primary(cancel?"Confirmar cancelamento":"Confirmar revisão","confirm-resolution",()->submit(f,()->{
+            if(cancel)service.cancelRejectedOrder(id,reason.getText());else service.reviseRejectedOrder(id,reason.getText());d.close();detail(id);
+        })));showDialog(d);
     }
 }

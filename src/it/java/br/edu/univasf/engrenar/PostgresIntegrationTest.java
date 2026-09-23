@@ -43,11 +43,31 @@ class PostgresIntegrationTest {
         assertNotNull(service.openOrder(customer.id(),vehicle.id(),"Novo","23/09/2026","10","Gerente"));
     }
     @Test void upgradePreservesOldDataAndReinitializationPreservesCredentials(){
-        db.transaction(c->{c.createStatement().execute("DROP TABLE app_user");c.createStatement().execute("UPDATE app_meta SET version=1");return null;});
+        db.transaction(c->{c.createStatement().execute("DROP TABLE password_reset");c.createStatement().execute("DROP TABLE app_user");c.createStatement().execute("UPDATE app_meta SET version=1");return null;});
         new Database(url,true);service.login("admin","123456");assertEquals(3,service.customers().size());assertEquals(4,service.orders().size());
         db.transaction(c->{c.createStatement().executeUpdate("UPDATE app_user SET password_hash='custom' WHERE username='admin'");return null;});
         new Database(url,true);
         assertThrows(ValidationException.class,()->service.login("admin","123456"));
+    }
+    @Test void rejectionResolutionAndPasswordRecoveryPersist(){
+        var order=service.orders().stream().filter(o->o.status()==OrderStatus.OPEN).findFirst().orElseThrow();
+        service.saveDiagnosis(order.id(),"Revisão");
+        var part=service.parts().get(0);
+        service.consumePart(order.id(),part.id(),"1");
+        service.decideBudget(order.id(),false,"Cliente");
+        service.reviseRejectedOrder(order.id(),"Reavaliar valores");
+        service.decideBudget(order.id(),false,"Cliente");
+        service.cancelRejectedOrder(order.id(),"Cliente retirará o veículo");
+        assertEquals(part.stock(),service.parts().stream().filter(p->p.id()==part.id()).findFirst().orElseThrow().stock());
+        assertFalse(service.orderHistory(order.id()).isEmpty());
+        service.createUser("Novo usuário","novo.pg","Senha inicial 123",Role.ATENDENTE);
+        var user=service.users().stream().filter(u->u.username().equals("novo.pg")).findFirst().orElseThrow();
+        String code=service.issueResetCode(user.username(),"123456");
+        Session.logout();service.recoverPassword("novo.pg",code,"Senha recuperada 456");
+        new Database(url,true);
+        service.login("novo.pg","Senha recuperada 456");
+        assertEquals(Role.ATENDENTE,Session.getUser().role());
+        assertThrows(ValidationException.class,()->service.recoverPassword("novo.pg",code,"Outra senha 789"));
     }
     @Test void rejectedOperationsRollbackAndRoleRestrictionsApply(){
         var open=service.orders().stream().filter(o->o.status()==OrderStatus.OPEN).findFirst().orElseThrow();

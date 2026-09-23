@@ -76,6 +76,9 @@ public final class LoginForm extends StackPane {
 
         // Montagem do formulário
         formContainer.getChildren().addAll(header, txtUser, txtPass, btnLogin, errorLabel);
+        Button recover=new Button("Esqueci minha senha");recover.setId("recover-password");
+        recover.setOnAction(e->AccountsPane.recover(getScene().getWindow(),service));formContainer.getChildren().add(recover);
+        btnLogin.setDefaultButton(true);
 
         // Alinhamento à esquerda com margem, replicando o visual do protótipo
         StackPane.setAlignment(formContainer, Pos.CENTER_LEFT);
