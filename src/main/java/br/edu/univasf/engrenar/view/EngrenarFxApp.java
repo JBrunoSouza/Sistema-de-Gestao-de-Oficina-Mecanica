@@ -5,7 +5,10 @@ import br.edu.univasf.engrenar.service.WorkshopService;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+<<<<<<< HEAD
 import javafx.scene.layout.Pane;
+=======
+>>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
 import javafx.stage.Stage;
 
 public class EngrenarFxApp extends Application {
@@ -19,15 +22,22 @@ public class EngrenarFxApp extends Application {
             );
             WorkshopService service = new WorkshopService(db);
 
+<<<<<<< HEAD
             // 1. Cria a cena inicialmente vazia (com o tamanho padrão da aplicação)
             Scene scene = new Scene(new Pane(), 1200, 800);
 
             // 2. Carrega o CSS global para que funcione tanto no Login quanto na MainWindow
+=======
+            MainWindow root = new MainWindow(primaryStage, service, "");
+            Scene scene = new Scene(root, 1200, 800);
+
+>>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
             var cssUrl = getClass().getResource("/styles/theme.css");
             if (cssUrl != null) {
                 scene.getStylesheets().add(cssUrl.toExternalForm());
             }
 
+<<<<<<< HEAD
             // 3. Define a ação que ocorrerá após o login com sucesso
             Runnable onLoginSuccess = () -> {
                 MainWindow mainWindow = new MainWindow(primaryStage, service, "");
@@ -38,6 +48,9 @@ public class EngrenarFxApp extends Application {
             // 4. Instancia o LoginForm e o define como a tela inicial
             LoginForm loginForm = new LoginForm(service, onLoginSuccess);
             scene.setRoot(loginForm);
+=======
+            root.setupKeyShortcuts(scene);
+>>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
 
             primaryStage.setTitle("Engrenar | Gestão de Oficina");
             primaryStage.setMinWidth(1000);
@@ -58,4 +71,9 @@ public class EngrenarFxApp extends Application {
     public static void main(String[] args) {
         launch(args);
     }
+<<<<<<< HEAD
 }
+=======
+}
+
+>>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29

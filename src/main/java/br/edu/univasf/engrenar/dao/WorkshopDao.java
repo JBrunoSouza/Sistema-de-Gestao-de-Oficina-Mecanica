@@ -67,6 +67,7 @@ public final class WorkshopDao {
     public Part part(Connection c, long id, boolean lock) throws SQLException {
         return query(c, "SELECT * FROM part WHERE id=?" + (lock ? " FOR UPDATE" : ""), this::part, id).stream().findFirst().orElse(null);
     }
+<<<<<<< HEAD
     private AppUser appUser(ResultSet r) throws SQLException {
         return new AppUser(
                 r.getLong("id"),
@@ -81,4 +82,6 @@ public final class WorkshopDao {
         return query(c, "SELECT * FROM app_user WHERE username=?", this::appUser, username)
                 .stream().findFirst().orElse(null);
     }
+=======
+>>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
 }
