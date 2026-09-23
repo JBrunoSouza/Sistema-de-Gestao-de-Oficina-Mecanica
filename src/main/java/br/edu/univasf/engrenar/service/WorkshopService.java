@@ -15,7 +15,6 @@ public final class WorkshopService {
     private final Clock clock;
     public WorkshopService(Database db) { this(db, Clock.systemDefaultZone()); }
     public WorkshopService(Database db, Clock clock) { this.db = db; this.clock = clock; }
-<<<<<<< HEAD
 
     // 1. Metodo privado para gerar o SHA-256
     private String hash(String password) {
@@ -52,8 +51,6 @@ public final class WorkshopService {
         });
     }
 
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
     public List<Customer> customers() { return db.transaction(dao::customers); }
     public List<Vehicle> vehicles() { return db.transaction(dao::vehicles); }
     public List<ServiceOrder> orders() { return db.transaction(dao::orders); }
@@ -63,10 +60,7 @@ public final class WorkshopService {
     public Vehicle vehicle(long id) { return db.transaction(c -> dao.vehicle(c, id, false)); }
     public LocalDate today() { return LocalDate.now(clock); }
     public BigDecimal receivedTotal() {
-<<<<<<< HEAD
         requireRole(Role.GERENTE);
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         return orders().stream().filter(o -> o.status() == OrderStatus.CLOSED)
             .map(ServiceOrder::budgetTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -92,7 +86,7 @@ public final class WorkshopService {
             return amount;
         } catch (ArithmeticException | NumberFormatException e) { throw new ValidationException("price", "Informe um valor positivo com até duas casas decimais (ex.: 120,50)."); }
     }
-<<<<<<< HEAD
+
     private void requireRole(Role... allowedRoles) {
         AppUser user = Session.getUser();
         if (user == null) throw new ValidationException("auth", "Usuário não autenticado.");
@@ -102,8 +96,7 @@ public final class WorkshopService {
             throw new ValidationException("auth", "Seu perfil (" + user.role() + ") não tem permissão para esta ação.");
         }
     }
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
+
     private LocalDate date(String text, String field, String label) {
         required(text, field, label, 10);
         try { return LocalDate.parse(text.strip(), DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(ResolverStyle.STRICT)); }
@@ -113,19 +106,13 @@ public final class WorkshopService {
         if (id == null || !dao.customerExists(c, id)) throw new ValidationException("customer", "Selecione um cliente cadastrado. Use Cadastrar cliente se necessário.");
     }
     public Customer addCustomer(String name, String phone, String email) {
-<<<<<<< HEAD
         requireRole(Role.GERENTE, Role.ATENDENTE);
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         String n = required(name,"name","o nome",150), p = required(phone,"phone","o telefone",40), e = required(email,"email","o e-mail",150);
         if (!e.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) throw new ValidationException("email", "Informe um e-mail válido.");
         return db.transaction(c -> new Customer(dao.insert(c, "INSERT INTO customer(name,phone,email) VALUES(?,?,?)",n,p,e),n,p,e));
     }
     public Vehicle addVehicle(String plate, String brand, String model, String mileage, String year, Long customerId) {
-<<<<<<< HEAD
         requireRole(Role.GERENTE, Role.ATENDENTE);
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         String p = required(plate,"plate","a placa",12).toUpperCase(Locale.ROOT).replace("-", "").replace(" ", "");
         if (!p.matches("[A-Z]{3}[0-9][A-Z0-9][0-9]{2}")) throw new ValidationException("plate", "Placa inválida. Use ABC1234 ou ABC1D23.");
         String b = required(brand,"brand","a marca",80), m = required(model,"model","o modelo",100);
@@ -148,10 +135,7 @@ public final class WorkshopService {
         return new ValidationException(Map.of("plate", "Placa já cadastrada: " + v + ". O veículo existente será exibido."), v.id());
     }
     public ServiceOrder openOrder(Long customerId, Long vehicleId, String complaint, String entryDate, String mileage, String responsible) {
-<<<<<<< HEAD
         requireRole(Role.GERENTE, Role.ATENDENTE);
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         String text = required(complaint,"complaint","a reclamação do cliente",2000), person = required(responsible,"responsible","o responsável",150);
         LocalDate date = date(entryDate,"entryDate","Data de entrada");
         long km = integer(mileage,"mileage","Quilometragem atual",0,999999999);
@@ -179,28 +163,19 @@ public final class WorkshopService {
         return order;
     }
     public void saveDiagnosis(long orderId, String diagnosis) {
-<<<<<<< HEAD
         requireRole(Role.GERENTE, Role.MECANICO);
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         String text = required(diagnosis,"diagnosis","o diagnóstico técnico",4000);
         db.transaction(c -> { editable(c,orderId); dao.execute(c,"UPDATE service_order SET diagnosis=? WHERE id=?",text,orderId); return null; });
     }
     public void addService(long orderId, String description, String quantity, String unitPrice) {
-<<<<<<< HEAD
         requireRole(Role.GERENTE, Role.MECANICO);
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         String text = required(description,"description","a descrição do serviço",200);
         int q = (int)integer(quantity,"quantity","Quantidade",1,9999);
         BigDecimal price = money(unitPrice);
         db.transaction(c -> { editable(c,orderId); dao.insert(c,"INSERT INTO order_item(order_id,kind,description,quantity,unit_price) VALUES(?,'SERVICE',?,?,?)",orderId,text,q,price); return null; });
     }
     public void addPart(String name, String unitPrice, String quantity) {
-<<<<<<< HEAD
         requireRole(Role.GERENTE);
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         String text = required(name,"name","o nome da peça",150);
         BigDecimal price = money(unitPrice);
         int q = (int)integer(quantity,"quantity","Quantidade de entrada",1,999999);
@@ -211,10 +186,7 @@ public final class WorkshopService {
         });
     }
     public void replenish(Long id, String quantity) {
-<<<<<<< HEAD
         requireRole(Role.GERENTE);
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         int q = (int)integer(quantity,"quantity","Quantidade de entrada",1,999999);
         db.transaction(c -> {
             Part part = id == null ? null : dao.part(c,id,true);
@@ -224,10 +196,7 @@ public final class WorkshopService {
         });
     }
     public void consumePart(long orderId, Long partId, String quantity) {
-<<<<<<< HEAD
         requireRole(Role.GERENTE, Role.MECANICO);
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         int q = (int)integer(quantity,"quantity","Quantidade utilizada",1,9999);
         db.transaction(c -> {
             editable(c,orderId);
@@ -240,10 +209,7 @@ public final class WorkshopService {
         });
     }
     public void removeItem(long orderId, long itemId) {
-<<<<<<< HEAD
         requireRole(Role.GERENTE, Role.MECANICO);
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         db.transaction(c -> {
             editable(c,orderId);
             OrderItem item = dao.items(c,orderId).stream().filter(i -> i.id()==itemId).findFirst().orElseThrow(() -> new ValidationException("item","Selecione um item desta OS."));
@@ -258,17 +224,13 @@ public final class WorkshopService {
         for (OrderItem item : items) { if (item.kind().equals("SERVICE")) services = services.add(item.subtotal()); else parts = parts.add(item.subtotal()); }
         return new Budget(order,items,services,parts,services.add(parts));
     }
-<<<<<<< HEAD
     public Budget budget(long id) {
         requireRole(Role.GERENTE, Role.ATENDENTE);
         return db.transaction(c -> budget(c,requiredOrder(c,id)));
     }
+
     public Budget decideBudget(long id, boolean approved, String responsible) {
         requireRole(Role.GERENTE, Role.ATENDENTE);
-=======
-    public Budget budget(long id) { return db.transaction(c -> budget(c,requiredOrder(c,id))); }
-    public Budget decideBudget(long id, boolean approved, String responsible) {
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         String person = required(responsible,"decisionBy","o responsável pela decisão",150);
         return db.transaction(c -> {
             ServiceOrder order = editable(c,id);
@@ -278,10 +240,7 @@ public final class WorkshopService {
         });
     }
     public void completeService(long id, long itemId) {
-<<<<<<< HEAD
         requireRole(Role.GERENTE, Role.MECANICO);
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         db.transaction(c -> {
             if (requiredOrder(c,id).status()!=OrderStatus.APPROVED) throw new ValidationException("order","A execução exige orçamento aprovado.");
             if (dao.execute(c,"UPDATE order_item SET completed=TRUE WHERE id=? AND order_id=? AND kind='SERVICE'",itemId,id)==0) throw new ValidationException("item","Selecione um serviço desta OS.");
@@ -292,10 +251,7 @@ public final class WorkshopService {
         closeOrder(id,payment,pickup,true);
     }
     public void closeOrder(long id, String payment, String pickup, boolean received) {
-<<<<<<< HEAD
         requireRole(Role.GERENTE, Role.ATENDENTE);
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         if (!received) throw new ValidationException("payment","Confirme o recebimento antes de encerrar.");
         String method = required(payment,"payment","a forma de pagamento",40);
         LocalDate date = date(pickup,"pickup","Data de retirada");

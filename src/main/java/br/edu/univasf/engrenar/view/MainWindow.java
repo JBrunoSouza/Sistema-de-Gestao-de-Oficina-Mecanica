@@ -49,10 +49,6 @@ public final class MainWindow extends BorderPane {
         setMinSize(1000, 700);
 
         // Barra Lateral (Sidebar)
-<<<<<<< HEAD
-// Barra Lateral (Sidebar)
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         VBox sidebar = new VBox(10);
         sidebar.getStyleClass().add("sidebar");
         sidebar.setPrefWidth(220);
@@ -63,7 +59,6 @@ public final class MainWindow extends BorderPane {
         Label caption = new Label("Gestão de oficina");
         caption.getStyleClass().add("brand-subtitle");
 
-<<<<<<< HEAD
         // Identificação do usuário atual
         AppUser currentUser = Session.getUser();
         Role role = currentUser.role();
@@ -89,11 +84,6 @@ public final class MainWindow extends BorderPane {
         }
 
         for (String name : menuOrder) {
-=======
-        sidebar.getChildren().addAll(brand, caption, new Region() {{ setMinHeight(25); }});
-
-        for (String name : List.of("Visão geral", "Clientes", "Veículos", "Ordens de serviço", "Estoque", "Relatórios")) {
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
             Button b = button(name, "nav-" + name, () -> showPage(name));
             b.getStyleClass().add("nav-button");
             b.setMaxWidth(Double.MAX_VALUE);
@@ -105,7 +95,7 @@ public final class MainWindow extends BorderPane {
         VBox.setVgrow(glue, Priority.ALWAYS);
         sidebar.getChildren().add(glue);
 
-<<<<<<< HEAD
+
         // 14. Botão de Logout
         Button btnSair = new Button("Sair");
         btnSair.getStyleClass().add("nav-button");
@@ -121,9 +111,6 @@ public final class MainWindow extends BorderPane {
             primaryStage.getScene().setRoot(loginForm);
         });
         sidebar.getChildren().add(btnSair);
-
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
         Label local = new Label("●  Banco local · PostgreSQL");
         local.getStyleClass().add("db-indicator");
         sidebar.getChildren().add(local);

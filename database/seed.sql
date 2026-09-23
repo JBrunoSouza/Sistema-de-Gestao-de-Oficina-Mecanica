@@ -20,10 +20,9 @@ INSERT INTO order_item(order_id,kind,description,quantity,unit_price,completed) 
  (4,'SERVICE','Alinhamento',1,90.00,FALSE);
 INSERT INTO order_item(order_id,kind,description,quantity,unit_price,part_id) VALUES(3,'PART','Filtro de óleo',1,35.90,1);
 INSERT INTO app_meta(version) VALUES(1);
-<<<<<<< HEAD
+
 INSERT INTO app_user (name, username, password_hash, role) VALUES
  ('Administrador', 'admin', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'GERENTE'),
  ('Ana Atendimento', 'ana', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'ATENDENTE'),
  ('Carlos Mecânico', 'carlos', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'MECANICO');
-=======
->>>>>>> 35847f781bc0747fabd7d4cbb31e17fe2070fc29
+
