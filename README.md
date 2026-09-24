@@ -274,79 +274,124 @@ Para interromper os containers:
 ```
 docker compose down
 ```
-
 ## Estrutura do Projeto
 
-```
+```text
 Sistema-de-Gestao-de-Oficina-Mecanica/
 ├── database/
 │   ├── .keep
+│   ├── evolution.sql
 │   ├── schema.sql
-│   └── seed.sql
+│   ├── seed.sql
+│   └── users.sql
 │
 ├── docs/
+│   ├── Diagramas_de_atividade_e_sequencia.pdf
 │   ├── Diagrama_casos_de_uso.png
 │   ├── Documento_de_requisitos_Engrenar.pdf
+│   ├── resumo-entrega.md
+│   ├── validacao-correcoes-relatorios.md
+│   ├── validacao-evolucao.md
 │   └── images/
 │       ├── costumers.png
 │       ├── dashboard.png
+│       ├── login.png
 │       ├── os.png
 │       ├── relatorios.png
 │       ├── storage.png
 │       └── vehicles.png
 │
 ├── src/
-│   └── main/
-│       ├── java/
-│       │   └── br/
-│       │       └── edu/
-│       │           └── univasf/
-│       │               └── engrenar/
-│       │                   ├── App.java
-│       │                   ├── dao/
-│       │                   │   ├── Database.java
-│       │                   │   └── WorkshopDao.java
-│       │                   ├── model/
-│       │                   │   ├── Budget.java
-│       │                   │   ├── Customer.java
-│       │                   │   ├── OrderItem.java
-│       │                   │   ├── OrderStatus.java
-│       │                   │   ├── Part.java
-│       │                   │   ├── ServiceOrder.java
-│       │                   │   └── Vehicle.java
-│       │                   ├── service/
-│       │                   │   ├── ValidationException.java
-│       │                   │   └── WorkshopService.java
-│       │                   └── view/
-│       │                       ├── EngrenarFxApp.java
-│       │                       ├── Form.java
-│       │                       ├── FxForm.java
-│       │                       ├── MainFrame.java
-│       │                       ├── MainWindow.java
-│       │                       └── Theme.java
-│       │
-│       └── resources/
-│           └── styles/
-│               └── theme.css
+│   ├── it/
+│   │   └── java/
+│   │       └── br/
+│   │           └── edu/
+│   │               └── univasf/
+│   │                   └── engrenar/
+│   │                       └── PostgresIntegrationTest.java
+│   │
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── br/
+│   │   │       └── edu/
+│   │   │           └── univasf/
+│   │   │               └── engrenar/
+│   │   │                   ├── App.java
+│   │   │                   ├── dao/
+│   │   │                   │   ├── Database.java
+│   │   │                   │   └── WorkshopDao.java
+│   │   │                   ├── model/
+│   │   │                   │   ├── AppUser.java
+│   │   │                   │   ├── Budget.java
+│   │   │                   │   ├── Customer.java
+│   │   │                   │   ├── HistoryEntry.java
+│   │   │                   │   ├── OrderItem.java
+│   │   │                   │   ├── OrderReport.java
+│   │   │                   │   ├── OrderStatus.java
+│   │   │                   │   ├── Part.java
+│   │   │                   │   ├── ReportFilter.java
+│   │   │                   │   ├── Role.java
+│   │   │                   │   ├── ServiceOrder.java
+│   │   │                   │   ├── Session.java
+│   │   │                   │   ├── UserInfo.java
+│   │   │                   │   └── Vehicle.java
+│   │   │                   ├── service/
+│   │   │                   │   ├── Passwords.java
+│   │   │                   │   ├── ReportPdfExporter.java
+│   │   │                   │   ├── ValidationException.java
+│   │   │                   │   └── WorkshopService.java
+│   │   │                   └── view/
+│   │   │                       ├── AccountsPane.java
+│   │   │                       ├── EngrenarFxApp.java
+│   │   │                       ├── Form.java
+│   │   │                       ├── FxForm.java
+│   │   │                       ├── LoginForm.java
+│   │   │                       ├── MainFrame.java
+│   │   │                       ├── MainWindow.java
+│   │   │                       ├── ReportsPane.java
+│   │   │                       └── Theme.java
+│   │   │
+│   │   └── resources/
+│   │       └── styles/
+│   │           └── theme.css
+│   │
+│   └── test/
+│       └── java/
+│           └── br/
+│               └── edu/
+│                   └── univasf/
+│                       └── engrenar/
+│                           ├── CurrentMainAuditTest.java
+│                           ├── EvolutionTest.java
+│                           ├── ExclusiveRolesTest.java
+│                           ├── JavaFxAuditTest.java
+│                           ├── ReportTest.java
+│                           └── WorkshopServiceTest.java
 │
+├── .gitignore
 ├── docker-compose.yml
 ├── iniciar.cmd
 ├── pom.xml
-└── README.md
+├── README.md
+└── .idea/
 ```
+
 ### Overview da Estrutura
 
-- `src/main/java`: contém o código principal da aplicação, organizado em:
-    - `dao`: acesso e persistência de dados.
-    - `model`: entidades e objetos do sistema.
-    - `service`: regras de negócio e validações.
-    - `view`: telas e componentes da interface gráfica.
-- `src/main/resources`: contém arquivos de recursos, como o tema visual em CSS.
-- `database`: possui os scripts de criação e inicialização do banco PostgreSQL.
-- `docs`: reúne documentos, diagramas e imagens do sistema.
-- `pom.xml`: configura as dependências e o processo de compilação com Maven.
-- `docker-compose.yml`: configura o banco de dados PostgreSQL em um container Docker.
-- `iniciar.cmd`: script para iniciar a aplicação no Windows sem precisar executar linhas de comando.
+- `java`: contém o código principal da aplicação, organizado em:
+  - `dao`: acesso e persistência de dados.
+  - `model`: entidades e objetos do sistema.
+  - `service`: regras de negócio, validações e exportação de relatórios.
+  - `view`: telas, formulários e componentes da interface gráfica em JavaFX.
+- `resources`: contém arquivos de recursos da aplicação, como o tema visual em CSS.
+- `java`: inclui testes automatizados de regras de negócio e validações do sistema.
+- `java`: contém testes de integração, incluindo validação com PostgreSQL.
+- `database`: reúne os scripts SQL de criação, migração, seed e usuários do banco de dados.
+- `docs`: reúne documentação técnica, diagramas, relatórios de validação e imagens do sistema.
+- `pom.xml`: configura as dependências e a compilação do projeto com Maven.
+- `docker-compose.yml`: orquestra o banco de dados PostgreSQL em container.
+- `iniciar.cmd`: script para iniciar a aplicação no Windows sem necessidade de comandos manuais.
+- `README.md`: documento principal com instruções e visão geral do projeto.
 
 ## Imagens do Sistema
 
