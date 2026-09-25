@@ -58,7 +58,8 @@ A aplicação foi projetada para funcionamento **desktop e local**, utilizando u
 
 ### Abertura de Ordens de Serviço
 
-- Seleção de cliente e veículo correspondentes.
+- Seleção de cliente e veículo correspondentes; **Continuar** verifica os cadastros e a ausência de OS ativa antes de mostrar os campos da ordem.
+- Sem cliente ou veículo selecionado, **Continuar** abre o cadastro correspondente. Ao trocar a seleção, é necessário validá-la novamente.
 - Registro da reclamação do cliente.
 - Registro da data de entrada, quilometragem atual e responsável pelo atendimento.
 - Geração automática do número da ordem de serviço.
@@ -101,7 +102,7 @@ A aplicação foi projetada para funcionamento **desktop e local**, utilizando u
 
 ### Fechamento de Ordens de Serviço
 
-- Exibição do resumo dos serviços, peças e valor total.
+- Consulta do resumo dos serviços, peças e valor total na aba **Orçamento**, antes de acessar **Fechamento**.
 - Exigência de aprovação prévia do orçamento.
 - Verificação da conclusão dos serviços.
 - Registro da forma de pagamento.
@@ -229,6 +230,14 @@ Para visualizar os logs:
 ```
 docker compose logs
 ```
+
+### Alternativa: PostgreSQL instalado localmente
+
+Docker fornece o banco, mas a aplicação também pode usar PostgreSQL 15 instalado diretamente. Configure o servidor em `localhost:5430`, banco `engrenar-db`, usuário e senha `engrenar` (ambiente acadêmico local). Não inicie Docker e outro PostgreSQL na mesma porta. O script `iniciar.cmd` continua destinado ao Docker.
+
+Com o banco ativo, use `mvn javafx:run` ou gere o executável com `mvn -DskipTests package` e execute `java -jar target/engrenar-1.0.0.jar`. A primeira compilação precisa baixar dependências; depois, o JAR já gerado funciona com o banco local sem internet.
+
+Consulte o [roteiro de apresentação e validação](docs/preparacao-apresentacao.md).
 
 ## Como Executar
 
