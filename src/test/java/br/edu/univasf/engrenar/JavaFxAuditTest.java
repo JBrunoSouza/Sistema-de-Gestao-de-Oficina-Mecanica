@@ -41,6 +41,97 @@ class JavaFxAuditTest {
         if(root instanceof Parent p) for(Node child:p.getChildrenUnmodifiable())result.addAll(nodes(child));
         return result;
     }
+    static Stage window(String title) {
+        return javafx.stage.Window.getWindows().stream().filter(w -> w instanceof Stage st && title.equals(st.getTitle()))
+                .map(w -> (Stage) w).findFirst().orElse(null);
+    }
+    static void launchOrder(WorkshopService service) {
+        Stage owner = new Stage();
+        MainWindow root = new MainWindow(owner, service, "");
+        owner.setScene(new Scene(root));
+        owner.show();
+        Platform.runLater(() -> {
+            try {
+                var method = MainWindow.class.getDeclaredMethod("orderForm");
+                method.setAccessible(true);
+                method.invoke(root);
+            } catch (ReflectiveOperationException e) { throw new RuntimeException(e); }
+        });
+    }
+    static void closeWindows() {
+        new ArrayList<>(javafx.stage.Window.getWindows()).forEach(w -> ((Stage) w).close());
+        Session.logout();
+    }
+    @Test @SuppressWarnings("unchecked")
+    void orderFormChecksSelectionBeforeShowingFieldsAndSaving() throws Exception {
+        WorkshopService service = service();
+        try {
+            fx(() -> {
+                Session.login(new AppUser(999,"Audit","audit","",Role.GERENTE));
+                launchOrder(service);
+            });
+            waitFx(() -> window("Abrir ordem de serviço") != null);
+            fx(() -> {
+                Parent form = window("Abrir ordem de serviço").getScene().getRoot();
+                var customers = (ComboBox<Customer>) form.lookup("#customer");
+                var vehicles = (ComboBox<Vehicle>) form.lookup("#vehicle");
+                Node details = form.lookup("#order-details");
+                assertFalse(details.isVisible());
+                ServiceOrder active = service.orders().stream().filter(o -> o.status()==OrderStatus.OPEN).findFirst().orElseThrow();
+                Customer customer = service.customers().stream().filter(c -> c.id()==active.customerId()).findFirst().orElseThrow();
+                customers.setValue(customer);
+                vehicles.setValue(service.vehicle(active.vehicleId()));
+                ((Button)form.lookup("#validate-order-selection")).fire();
+                assertFalse(details.isVisible());
+                assertTrue(nodes(form).stream().anyMatch(n -> n instanceof Label l && l.getText().contains(active.number())));
+                Vehicle free = service.addVehicle("TST1234","Fiat","Teste","10","2021",customer.id());
+                customers.setValue(null); customers.setValue(customer); vehicles.setValue(free);
+                ((Button)form.lookup("#validate-order-selection")).fire();
+                assertTrue(details.isVisible());
+                assertEquals("10",((TextField)form.lookup("#mileage")).getText());
+                vehicles.setValue(null);
+                assertFalse(details.isVisible());
+                vehicles.setValue(free);
+                ((Button)form.lookup("#validate-order-selection")).fire();
+                int before = service.orders().size();
+                ((Button)form.lookup("#save-order")).fire();
+                assertEquals(before,service.orders().size());
+                assertTrue(details.isVisible());
+                ((TextArea)form.lookup("#complaint")).setText("Ruído no motor");
+                ((TextField)form.lookup("#responsible")).setText("Teste");
+                ((Button)form.lookup("#save-order")).fire();
+                assertNull(window("Abrir ordem de serviço"));
+                assertEquals(before+1,service.orders().size());
+            });
+        } finally { fx(JavaFxAuditTest::closeWindows); }
+    }
+    @Test @SuppressWarnings("unchecked")
+    void missingSelectionRoutesToCustomerAndVehicleRegistration() throws Exception {
+        WorkshopService service = service();
+        try {
+            fx(() -> {
+                Session.login(new AppUser(999,"Audit","audit","",Role.GERENTE));
+                launchOrder(service);
+            });
+            waitFx(() -> window("Abrir ordem de serviço") != null);
+            fx(() -> Platform.runLater(() -> ((Button)window("Abrir ordem de serviço").getScene().lookup("#validate-order-selection")).fire()));
+            waitFx(() -> window("Cadastrar cliente") != null);
+            fx(() -> {
+                window("Cadastrar cliente").close();
+                Parent form = window("Abrir ordem de serviço").getScene().getRoot();
+                assertFalse(form.lookup("#order-details").isVisible());
+                Customer customer = service.addCustomer("Sem veículo","123","teste@example.com");
+                ((ComboBox<Customer>)form.lookup("#customer")).setValue(customer);
+                Platform.runLater(() -> ((Button)form.lookup("#validate-order-selection")).fire());
+            });
+            waitFx(() -> window("Cadastrar veículo") != null);
+            fx(() -> {
+                assertFalse(window("Abrir ordem de serviço").getScene().lookup("#order-details").isVisible());
+                window("Cadastrar veículo").close();
+            });
+        } finally { fx(JavaFxAuditTest::closeWindows); }
+    }
+
     @ParameterizedTest @EnumSource(Role.class)
     void eachRoleCanOpenDashboardAndItsMenus(Role role) throws Exception {
         fx(()->{

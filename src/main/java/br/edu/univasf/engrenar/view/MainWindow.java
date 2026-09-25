@@ -604,48 +604,78 @@ public final class MainWindow extends BorderPane {
         if (!canOpen("Clientes")) throw new ValidationException("auth", "Seu perfil não pode abrir ordens de serviço.");
         FxForm f = new FxForm();
         Stage d = dialog("Abrir ordem de serviço", f);
-
+        f.extra(new Label("Selecione cliente e veículo para continuar."));
         ComboBox<Customer> customer = f.field("customer", "Cliente *", new ComboBox<>());
         ComboBox<Vehicle> vehicle = f.field("vehicle", "Veículo * (placa · modelo · km)", new ComboBox<>());
-        TextArea complaint = f.area("complaint", "Reclamação do cliente *", "");
-        TextField date = f.text("entryDate", "Data de entrada * (dd/mm/aaaa)", service.today().format(DATE));
-        TextField km = f.text("mileage", "Quilometragem atual *", "");
-        TextField person = f.text("responsible", "Responsável pelo atendimento *", "");
 
+        FxForm details = new FxForm();
+        details.setId("order-details");
+        details.setVisible(false);
+        details.managedProperty().bind(details.visibleProperty());
+        TextArea complaint = details.area("complaint", "Reclamação do cliente *", "");
+        TextField date = details.text("entryDate", "Data de entrada * (dd/mm/aaaa)", service.today().format(DATE));
+        TextField km = details.text("mileage", "Quilometragem atual *", "");
+        TextField person = details.text("responsible", "Responsável pelo atendimento *", "");
+        details.finish();
+
+        Runnable invalidate = () -> {
+            details.setVisible(false);
+            details.clearErrors();
+            f.clearErrors();
+            km.clear();
+        };
         customer.setOnAction(e -> {
+            invalidate.run();
             Long id = customerId(customer);
             fill(vehicle, service.vehicles().stream().filter(v -> id != null && v.customerId() == id).toList(), null);
-            km.setText("");
         });
-
-        vehicle.setOnAction(e -> {
-            Vehicle v = vehicle.getValue();
-            if (v != null) km.setText(String.valueOf(v.mileage()));
-        });
-
+        vehicle.setOnAction(e -> invalidate.run());
         fill(customer, service.customers(), null);
 
-        HBox shortcuts = new HBox(10);
-        shortcuts.getChildren().addAll(
-                button("Cadastrar cliente", "missing-customer", () -> customerForm(c -> fill(customer, service.customers(), c))),
-                button("Cadastrar veículo", "missing-vehicle", () -> vehicleForm(customer.getValue(), v -> {
-                    Customer c = service.customers().stream().filter(x -> x.id() == v.customerId()).findFirst().orElseThrow();
-                    fill(customer, service.customers(), c);
-                    fill(vehicle, service.vehicles().stream().filter(x -> x.customerId() == c.id()).toList(), v);
-                }))
-        );
+        Runnable registerCustomer = () -> customerForm(c -> fill(customer, service.customers(), c));
+        Runnable registerVehicle = () -> vehicleForm(customer.getValue(), v -> {
+            Customer c = service.customers().stream().filter(x -> x.id() == v.customerId()).findFirst().orElseThrow();
+            fill(customer, service.customers(), c);
+            fill(vehicle, service.vehicles().stream().filter(x -> x.customerId() == c.id()).toList(), v);
+        });
+        HBox shortcuts = new HBox(10,
+                button("Cadastrar cliente", "missing-customer", registerCustomer),
+                button("Cadastrar veículo", "missing-vehicle", () -> {
+                    if (customer.getValue() == null) registerCustomer.run();
+                    if (customer.getValue() != null) registerVehicle.run();
+                }));
         f.extra(shortcuts);
-
         f.finish();
-
-        Button save = primary("Confirmar abertura", "save-order", () -> submit(f, () -> {
-            Vehicle v = vehicle.getValue();
-            ServiceOrder order = service.openOrder(customerId(customer), v == null ? null : v.id(), complaint.getText(), date.getText(), km.getText(), person.getText());
+        f.extra(primary("Continuar", "validate-order-selection", () -> submit(f, () -> {
+            invalidate.run();
+            if (customer.getValue() == null) {
+                registerCustomer.run();
+                return;
+            }
+            if (vehicle.getValue() == null) {
+                registerVehicle.run();
+                return;
+            }
+            Vehicle selected = service.validateOrderSelection(customerId(customer), vehicle.getValue().id());
+            km.setText(String.valueOf(selected.mileage()));
+            details.setVisible(true);
+            complaint.requestFocus();
+        })));
+        details.extra(primary("Confirmar abertura", "save-order", () -> submit(details, () -> {
+            // Recheck at confirmation: another user may have opened an order since selection.
+            try {
+                service.validateOrderSelection(customerId(customer), vehicle.getValue() == null ? null : vehicle.getValue().id());
+            } catch (ValidationException e) {
+                invalidate.run();
+                f.showError(e);
+                return;
+            }
+            ServiceOrder order = service.openOrder(customerId(customer), vehicle.getValue().id(), complaint.getText(), date.getText(), km.getText(), person.getText());
             d.close();
             detail(order.id());
             notice(order.number() + " aberta com sucesso.", false);
-        }));
-        f.extra(save);
+        })));
+        f.extra(details);
         showDialog(d);
     }
 

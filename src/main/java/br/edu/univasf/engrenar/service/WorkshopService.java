@@ -177,15 +177,26 @@ public final class WorkshopService {
     private ValidationException duplicate(Vehicle v) {
         return new ValidationException(Map.of("plate", "Placa já cadastrada: " + v + ". O veículo existente será exibido."), v.id());
     }
+    /** Checks the selection without creating or reserving an order. */
+    public Vehicle validateOrderSelection(Long customerId, Long vehicleId) {
+        requireRole(Role.GERENTE, Role.ATENDENTE);
+        return db.transaction(c -> validateOrderSelection(c, customerId, vehicleId));
+    }
+
+    private Vehicle validateOrderSelection(Connection c, Long customerId, Long vehicleId) throws SQLException {
+        requireCustomer(c,customerId);
+        Vehicle v = vehicleId == null ? null : dao.vehicle(c,vehicleId,true);
+        if (v == null) throw new ValidationException("vehicle","Selecione um veículo cadastrado. Use Cadastrar veículo se necessário.");
+        if (v.customerId() != customerId) throw new ValidationException("vehicle","O veículo selecionado não pertence ao cliente.");
+        Long active = dao.activeOrder(c,vehicleId);
+        if (active != null) throw new ValidationException("vehicle","Este veículo já possui a OS-" + String.format("%05d",active) + " em aberto. Encerre o atendimento antes de abrir outra OS.");
+        return v;
+    }
+
     public ServiceOrder openOrder(Long customerId, Long vehicleId, String complaint, String entryDate, String mileage, String responsible) {
         requireRole(Role.GERENTE, Role.ATENDENTE);
         return db.transaction(c -> {
-            requireCustomer(c,customerId);
-            Vehicle v = vehicleId == null ? null : dao.vehicle(c,vehicleId,true);
-            if (v == null) throw new ValidationException("vehicle","Selecione um veículo cadastrado. Use Cadastrar veículo se necessário.");
-            if (v.customerId() != customerId) throw new ValidationException("vehicle","O veículo selecionado não pertence ao cliente.");
-            Long active = dao.activeOrder(c,vehicleId);
-            if (active != null) throw new ValidationException("vehicle","Este veículo já possui a OS-" + String.format("%05d",active) + " em aberto. Encerre o atendimento antes de abrir outra OS.");
+            validateOrderSelection(c, customerId, vehicleId);
             String text = required(complaint,"complaint","a reclamação do cliente",2000), person = required(responsible,"responsible","o responsável",150);
             LocalDate date = date(entryDate,"entryDate","Data de entrada");
             long km = integer(mileage,"mileage","Quilometragem atual",0,999999999);

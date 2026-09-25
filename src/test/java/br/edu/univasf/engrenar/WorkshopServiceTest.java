@@ -34,6 +34,18 @@ class WorkshopServiceTest {
     private ServiceOrder open(Vehicle v) {return service.openOrder(customer.id(),v.id(),"Ruído ao frear","16/09/2026","42100","Matheus");}
     private ValidationException invalid(String field,org.junit.jupiter.api.function.Executable action) {ValidationException e=assertThrows(ValidationException.class,action);assertTrue(e.fields().containsKey(field),e.getMessage());return e;}
 
+    @Test void selectionCheckDoesNotReserveAndConfirmationRechecksActiveOrder() {
+        Vehicle v=vehicle();
+        invalid("customer",()->service.validateOrderSelection(null,v.id()));
+        invalid("vehicle",()->service.validateOrderSelection(customer.id(),null));
+        assertEquals(v,service.validateOrderSelection(customer.id(),v.id()));
+        assertTrue(service.orders().isEmpty());
+        ServiceOrder opened=open(v);
+        assertTrue(invalid("vehicle",()->service.validateOrderSelection(customer.id(),v.id())).getMessage().contains(opened.number()));
+        invalid("vehicle",()->open(v));
+        assertEquals(1,service.orders().size());
+    }
+
     @Test void vehiclePersistsAllFieldsAndCustomer() {Vehicle v=vehicle();assertEquals(v,service.vehicle(v.id()));assertEquals(customer.id(),v.customerId());}
     @ParameterizedTest @ValueSource(strings={"abc1d23","ABC-1D23"," ABC1D23 "})
     void duplicatePlateReturnsExistingVehicle(String plate) {Vehicle v=vehicle();ValidationException e=invalid("plate",()->service.addVehicle(plate,"Fiat","Argo","100","2020",customer.id()));assertEquals(v.id(),e.existingVehicleId());assertEquals(1,service.vehicles().size());}
