@@ -179,9 +179,6 @@ public final class WorkshopService {
     }
     public ServiceOrder openOrder(Long customerId, Long vehicleId, String complaint, String entryDate, String mileage, String responsible) {
         requireRole(Role.GERENTE, Role.ATENDENTE);
-        String text = required(complaint,"complaint","a reclamação do cliente",2000), person = required(responsible,"responsible","o responsável",150);
-        LocalDate date = date(entryDate,"entryDate","Data de entrada");
-        long km = integer(mileage,"mileage","Quilometragem atual",0,999999999);
         return db.transaction(c -> {
             requireCustomer(c,customerId);
             Vehicle v = vehicleId == null ? null : dao.vehicle(c,vehicleId,true);
@@ -189,6 +186,9 @@ public final class WorkshopService {
             if (v.customerId() != customerId) throw new ValidationException("vehicle","O veículo selecionado não pertence ao cliente.");
             Long active = dao.activeOrder(c,vehicleId);
             if (active != null) throw new ValidationException("vehicle","Este veículo já possui a OS-" + String.format("%05d",active) + " em aberto. Encerre o atendimento antes de abrir outra OS.");
+            String text = required(complaint,"complaint","a reclamação do cliente",2000), person = required(responsible,"responsible","o responsável",150);
+            LocalDate date = date(entryDate,"entryDate","Data de entrada");
+            long km = integer(mileage,"mileage","Quilometragem atual",0,999999999);
             long id = dao.insert(c,"INSERT INTO service_order(customer_id,vehicle_id,complaint,entry_date,mileage,responsible,status) VALUES(?,?,?,?,?,?,'OPEN')",customerId,vehicleId,text,date,km,person);
             dao.execute(c,"INSERT INTO active_order(vehicle_id,order_id) VALUES(?,?)",vehicleId,id);
             dao.execute(c,"UPDATE vehicle SET mileage=? WHERE id=?",km,vehicleId);

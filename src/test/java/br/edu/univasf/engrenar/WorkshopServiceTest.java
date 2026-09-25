@@ -57,6 +57,25 @@ class WorkshopServiceTest {
         invalid("vehicle",()->service.openOrder(other.id(),v.id(),"Ruído","16/09/2026","100","Matheus"));
         assertTrue(service.orders().isEmpty());
     }
+    @Test void customerValidationPrecedesBlankOrderFields() {
+        invalid("customer",()->service.openOrder(null,null,"","","",""));
+        invalid("customer",()->service.openOrder(999L,null,"","","",""));
+        assertTrue(service.orders().isEmpty());
+    }
+    @Test void vehicleValidationPrecedesBlankOrderFields() {
+        invalid("vehicle",()->service.openOrder(customer.id(),null,"","","",""));
+        invalid("vehicle",()->service.openOrder(customer.id(),999L,"","","",""));
+        Vehicle v=vehicle();Customer other=service.addCustomer("Bia","123","bia@example.com");
+        ValidationException e=invalid("vehicle",()->service.openOrder(other.id(),v.id(),"","","",""));
+        assertTrue(e.getMessage().contains("não pertence"));
+        assertTrue(service.orders().isEmpty());
+    }
+    @Test void activeOrderValidationPrecedesBlankOrderFields() {
+        Vehicle v=vehicle();ServiceOrder existing=open(v);
+        ValidationException e=invalid("vehicle",()->service.openOrder(customer.id(),v.id(),"","","",""));
+        assertTrue(e.getMessage().contains(existing.number()));
+        assertEquals(1,service.orders().size());
+    }
     @Test void requiredOrderFieldsAndInvalidDatesPreventSave() {
         Vehicle v=vehicle();
         invalid("complaint",()->service.openOrder(customer.id(),v.id(),"","16/09/2026","100","Matheus"));
